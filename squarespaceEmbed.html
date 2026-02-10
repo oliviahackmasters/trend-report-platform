@@ -131,7 +131,6 @@
     color: var(--hm-black);
   }
 
-  /* Prompt tiles (like Hyper Island cards but on-brand) */
   #hmTrendChat .hm-prompts{
     display:grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -171,7 +170,6 @@
     padding: 10px 12px;
     margin: 0 0 10px 0;
     border-radius: 0;
-    white-space: pre-wrap;
     word-break: break-word;
     overflow-wrap: anywhere;
     line-height: 1.6;
@@ -190,6 +188,36 @@
     color: var(--hm-copper);
     font-size: 12px;
     margin-bottom: 6px;
+  }
+
+  /* Markdown-ish formatting styles inside assistant messages */
+  #hmTrendChat .hm-msg-body p{
+    margin: 0 0 10px 0;
+  }
+  #hmTrendChat .hm-msg-body strong{
+    color: var(--hm-copper);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  #hmTrendChat .hm-msg-body ul,
+  #hmTrendChat .hm-msg-body ol{
+    margin: 10px 0 12px 18px;
+    padding: 0;
+  }
+  #hmTrendChat .hm-msg-body li{
+    margin: 6px 0;
+  }
+  #hmTrendChat .hm-msg-body .hm-section{
+    margin: 12px 0 10px 0;
+  }
+  #hmTrendChat .hm-msg-body .hm-section-title{
+    color: var(--hm-copper);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 0 0 6px 0;
+    font-size: 12px;
   }
 
   /* Input bar */
@@ -228,10 +256,11 @@
     <div class="hm-wrap">
       <div class="hm-title">
         <span class="hm-badge">HACKMASTERS</span>
-        <span>TRENDS AI ASSISTANT</span>
+        <span>TREND BOILER</span>
       </div>
       <p class="hm-sub">
         Upload trend reports (PDF) and ask questions grounded in your documents.
+        Maximum file size: 4MB. For best results, upload multiple focused reports rather than a single mega-report.
       </p>
 
       <div class="hm-row">
@@ -295,6 +324,53 @@
     return h;
   }
 
+  function escapeHtml(str){
+    return String(str || "").replace(/[&<>"']/g, (m) => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    }[m]));
+  }
+
+  // ✅ Format markdown-ish outputs into clean HTML (bold + lists + paragraphs)
+  function formatMarkdownToHtml(text){
+    const src = String(text || "");
+    const safe = escapeHtml(src);
+
+    // Split into paragraph blocks by blank lines
+    const blocks = safe.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
+
+    return blocks.map(block => {
+      // Bold (markdown **text**)
+      let b = block.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+
+      const lines = b.split("\n").map(l => l.trim()).filter(Boolean);
+
+      // Detect list-like blocks (all lines start with -, •, *, or "1.")
+      const isList = lines.length > 1 && lines.every(l => /^(\-|\•|\*|\d+\.)\s+/.test(l));
+      if (isList){
+        const isOrdered = lines.every(l => /^\d+\.\s+/.test(l));
+        const items = lines.map(l => l.replace(/^(\-|\•|\*|\d+\.)\s+/, "").trim());
+        return isOrdered
+          ? `<ol>${items.map(i => `<li>${i}</li>`).join("")}</ol>`
+          : `<ul>${items.map(i => `<li>${i}</li>`).join("")}</ul>`;
+      }
+
+      // If first line looks like a section title and there’s more content, style it
+      if (lines.length >= 2 && lines[0].length <= 80 && !/[.?!]$/.test(lines[0])) {
+        const title = lines[0].replace(/<\/?strong>/g, ""); // avoid bold tags in title
+        const rest = lines.slice(1).join("<br>");
+        return `
+          <div class="hm-section">
+            <div class="hm-section-title">${title}</div>
+            <div>${rest}</div>
+          </div>
+        `;
+      }
+
+      // Regular paragraph; preserve single newlines as <br>
+      return `<p>${b.replace(/\n/g, "<br>")}</p>`;
+    }).join("");
+  }
+
   function addMsg(who, text){
     const wrap = document.createElement("div");
     wrap.className = "hm-msg " + (who === "me" ? "hm-me" : "hm-ai");
@@ -304,7 +380,13 @@
     title.textContent = who === "me" ? "YOU" : "ASSISTANT";
 
     const body = document.createElement("div");
-    body.textContent = text || "";
+    body.className = "hm-msg-body";
+
+    if (who === "ai") {
+      body.innerHTML = formatMarkdownToHtml(text || "");
+    } else {
+      body.textContent = text || "";
+    }
 
     wrap.appendChild(title);
     wrap.appendChild(body);
@@ -327,63 +409,63 @@
     setStatus("SESSION READY");
   }
 
-async function uploadFiles() {
-  const files = Array.from(fileEl.files || []);
-  if (!files.length) return setStatus("CHOOSE PDFS FIRST", true);
+  async function uploadFiles() {
+    const files = Array.from(fileEl.files || []);
+    if (!files.length) return setStatus("CHOOSE PDFS FIRST", true);
 
-  // ✅ Size gate BEFORE any network request
-  const MAX_MB = 4;
-  const tooBig = files.find(f => f.size > MAX_MB * 1024 * 1024);
-  if (tooBig) {
-    setStatus(
-      `FILE TOO LARGE: ${tooBig.name} (${Math.round(tooBig.size / 1024 / 1024)}MB). MAX ${MAX_MB}MB`,
-      true
-    );
-    return;
-  }
-
-  // (optional but recommended) only accept PDFs
-  const notPdf = files.find(f => !String(f.name || "").toLowerCase().endsWith(".pdf"));
-  if (notPdf) {
-    setStatus(`ONLY PDFS ALLOWED: ${notPdf.name}`, true);
-    return;
-  }
-
-  await ensureSession();
-
-  setStatus("UPLOADING…");
-  uploadBtn.disabled = true;
-  askBtn.disabled = true;
-
-  try {
-    const form = new FormData();
-    files.forEach(f => form.append("file", f, f.name));
-
-    const resp = await fetch(API_BASE + "/api/upload", {
-      method: "POST",
-      headers: headersForm(), // IMPORTANT: must NOT set Content-Type manually for FormData
-      body: form
-    });
-
-    const data = await resp.json().catch(() => ({}));
-    if (!resp.ok) {
-      throw new Error(
-        (data.error || "UPLOAD FAILED") + (data.details ? " — " + data.details : "")
+    // Size gate BEFORE any network request
+    const MAX_MB = 4;
+    const tooBig = files.find(f => f.size > MAX_MB * 1024 * 1024);
+    if (tooBig) {
+      setStatus(
+        `FILE TOO LARGE: ${tooBig.name} (${Math.round(tooBig.size / 1024 / 1024)}MB). MAX ${MAX_MB}MB`,
+        true
       );
+      return;
     }
 
-    const list = (data.uploaded || []).map(x => "- " + x.filename).join("\n");
-    addMsg("ai", "UPLOADED:\n" + (list || "(NO VALID PDFS DETECTED)"));
-    setStatus("UPLOAD COMPLETE");
-    fileEl.value = "";
-  } catch (e) {
-    setStatus("UPLOAD ERROR", true);
-    addMsg("ai", "UPLOAD ERROR: " + (e.message || e));
-  } finally {
-    uploadBtn.disabled = false;
-    askBtn.disabled = false;
+    // Only accept PDFs
+    const notPdf = files.find(f => !String(f.name || "").toLowerCase().endsWith(".pdf"));
+    if (notPdf) {
+      setStatus(`ONLY PDFS ALLOWED: ${notPdf.name}`, true);
+      return;
+    }
+
+    await ensureSession();
+
+    setStatus("UPLOADING…");
+    uploadBtn.disabled = true;
+    askBtn.disabled = true;
+
+    try {
+      const form = new FormData();
+      files.forEach(f => form.append("file", f, f.name));
+
+      const resp = await fetch(API_BASE + "/api/upload", {
+        method: "POST",
+        headers: headersForm(),
+        body: form
+      });
+
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        throw new Error(
+          (data.error || "UPLOAD FAILED") + (data.details ? " — " + data.details : "")
+        );
+      }
+
+      const list = (data.uploaded || []).map(x => "- " + x.filename).join("\n");
+      addMsg("ai", "UPLOADED:\n" + (list || "(NO VALID PDFS DETECTED)"));
+      setStatus("UPLOAD COMPLETE");
+      fileEl.value = "";
+    } catch (e) {
+      setStatus("UPLOAD ERROR", true);
+      addMsg("ai", "UPLOAD ERROR: " + (e.message || e));
+    } finally {
+      uploadBtn.disabled = false;
+      askBtn.disabled = false;
+    }
   }
-}
 
   async function ask(question){
     const q = (question || "").trim();
