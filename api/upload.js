@@ -12,10 +12,8 @@ function json(res, status, payload) {
   res.end(JSON.stringify(payload));
 }
 
-async function deleteVectorStoreAndFiles(vectorStoreId) {
-  // Delete the vector store; OpenAI also supports deleting individual files if you want.
-  // For simplicity we delete the vector store and then optionally delete files later.
-  await openai.vector_stores.del(vectorStoreId);
+async function safeDeleteVectorStore(vectorStoreId) {
+  try { await openai.vector_stores.del(vectorStoreId); } catch {}
 }
 
 export default async function handler(req, res) {
@@ -30,19 +28,20 @@ export default async function handler(req, res) {
   if (!session?.vsid) return json(res, 400, { error: "Missing/invalid session token." });
 
   if (isExpired(session.createdAt)) {
-    try { await deleteVectorStoreAndFiles(session.vsid); } catch {}
+    await safeDeleteVectorStore(session.vsid);
     return json(res, 410, { error: "Session expired. Please start a new session." });
   }
 
   const bb = Busboy({ headers: req.headers, limits: { files: 5, fileSize: 25 * 1024 * 1024 } });
 
-  let uploaded = [];
-  let filePromises = [];
+  const uploaded = [];
+  const tasks = [];
 
-  bb.on("file", (name, file, info) => {
-    const { filename, mimeType } = info;
+  bb.on("file", (fieldname, file, info) => {
+    const filename = info?.filename || "";
+    const lower = filename.toLowerCase();
 
-    if (!filename || !filename.toLowerCase().endsWith(".pdf")) {
+    if (!lower.endsWith(".pdf")) {
       file.resume();
       return;
     }
@@ -51,17 +50,15 @@ export default async function handler(req, res) {
     const writeStream = fs.createWriteStream(tmpPath);
     file.pipe(writeStream);
 
-    const p = new Promise((resolve, reject) => {
+    const task = new Promise((resolve, reject) => {
       writeStream.on("finish", async () => {
         try {
-          // Upload file to OpenAI Files API
           const createdFile = await openai.files.create({
             file: fs.createReadStream(tmpPath),
             purpose: "assistants"
-          }); :contentReference[oaicite:3]{index=3}
+          });
 
-          // Attach file to vector store
-          await openai.vector_stores.files.create(session.vsid, { file_id: createdFile.id }); :contentReference[oaicite:4]{index=4}
+          await openai.vector_stores.files.create(session.vsid, { file_id: createdFile.id });
 
           uploaded.push({ fileId: createdFile.id, filename });
           fs.unlink(tmpPath, () => {});
@@ -71,19 +68,16 @@ export default async function handler(req, res) {
           reject(err);
         }
       });
+
       writeStream.on("error", reject);
     });
 
-    filePromises.push(p);
+    tasks.push(task);
   });
 
   bb.on("finish", async () => {
     try {
-      await Promise.all(filePromises);
-
-      // Optional: poll vector store files until processed (MVP skips; fast enough for small PDFs)
-      // Docs recommend polling until all files are out of in_progress. :contentReference[oaicite:5]{index=5}
-
+      await Promise.all(tasks);
       return json(res, 200, { uploaded });
     } catch (err) {
       return json(res, 500, { error: "Upload failed", details: String(err?.message || err) });

@@ -8,15 +8,8 @@ function json(res, status, payload) {
   res.end(JSON.stringify(payload));
 }
 
-async function deleteVectorStore(vectorStoreId) {
-  await openai.vector_stores.del(vectorStoreId);
-}
-
-function extractCitations(response) {
-  // Responses can include file_search tool call results if you request include[].
-  // For MVP we return the model text; citations will be added in Phase 2 if needed.
-  // Docs: include tool call content via include query param. :contentReference[oaicite:6]{index=6}
-  return [];
+async function safeDeleteVectorStore(vectorStoreId) {
+  try { await openai.vector_stores.del(vectorStoreId); } catch {}
 }
 
 export default async function handler(req, res) {
@@ -31,24 +24,24 @@ export default async function handler(req, res) {
   if (!session?.vsid) return json(res, 400, { error: "Missing/invalid session token." });
 
   if (isExpired(session.createdAt)) {
-    try { await deleteVectorStore(session.vsid); } catch {}
+    await safeDeleteVectorStore(session.vsid);
     return json(res, 410, { error: "Session expired. Please start a new session." });
   }
 
   const body = typeof req.body === "string" ? JSON.parse(req.body) : (req.body || {});
-  const question = (body.question || "").trim();
+  const question = String(body.question || "").trim();
   const history = Array.isArray(body.history) ? body.history : [];
 
   if (!question) return json(res, 400, { error: "Missing question." });
 
   const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
 
-  const system = `
-You are a helpful assistant for trend reports.
-Answer ONLY using the uploaded documents when possible.
-If the answer is not in the documents, say so and ask what to upload next.
-Be concise and structured.
-`;
+  const system = [
+    "You are a trends research assistant.",
+    "Answer using ONLY the uploaded documents when possible.",
+    "If the answer is not in the documents, say: NOT IN DOCUMENTS, then suggest what to upload.",
+    "Keep answers structured and concise."
+  ].join("\n");
 
   const input = [
     { role: "system", content: system },
@@ -62,13 +55,10 @@ Be concise and structured.
       input,
       tools: [{ type: "file_search", vector_store_ids: [session.vsid] }],
       max_output_tokens: 900
-    }); :contentReference[oaicite:7]{index=7}
-
-    json(res, 200, {
-      answer: resp.output_text || "",
-      citations: extractCitations(resp)
     });
+
+    return json(res, 200, { answer: resp.output_text || "" });
   } catch (err) {
-    json(res, 500, { error: "OpenAI request failed", details: String(err?.message || err) });
+    return json(res, 500, { error: "OpenAI request failed", details: String(err?.message || err) });
   }
 }

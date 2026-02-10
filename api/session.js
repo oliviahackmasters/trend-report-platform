@@ -9,14 +9,14 @@ export default async function handler(req, res) {
 
   if (req.method !== "POST") {
     res.statusCode = 405;
+    res.setHeader("Content-Type", "application/json");
     return res.end(JSON.stringify({ error: "Use POST." }));
   }
 
   const body = typeof req.body === "string" ? JSON.parse(req.body) : (req.body || {});
-  const title = (body.title || "Trend Reports Session").slice(0, 80);
+  const title = String(body.title || "Trend Reports Session").slice(0, 80);
 
-  // Create vector store (managed retrieval index)
-  const vs = await openai.vector_stores.create({ name: title }); :contentReference[oaicite:2]{index=2}
+  const vs = await openai.vector_stores.create({ name: title });
 
   const createdAt = Date.now();
   const token = makeSessionToken({ vsid: vs.id, createdAt });
