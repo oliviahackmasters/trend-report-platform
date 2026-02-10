@@ -9,27 +9,38 @@ function json(res, status, payload) {
 }
 
 export default async function handler(req, res) {
-  // ALWAYS set CORS first
   setCors(req, res);
 
   try {
     if (handleOptions(req, res)) return;
     if (!requireDemoToken(req, res)) return;
 
-    if (req.method !== "POST") {
-      return json(res, 405, { error: "Use POST." });
+    if (req.method !== "POST") return json(res, 405, { error: "Use POST." });
+
+    // --- DIAGNOSTICS ---
+    const hasKey = !!process.env.OPENAI_API_KEY;
+    const hasVSsnake = !!openai?.vector_stores;
+    const hasVScamel = !!openai?.vectorStores;
+
+    if (!hasKey) {
+      return json(res, 500, { error: "SESSION FAILED", details: "Missing OPENAI_API_KEY in this Vercel project." });
     }
 
-    // sanity check env early so you get a readable error
-    if (!process.env.OPENAI_API_KEY) {
-      return json(res, 500, { error: "Missing OPENAI_API_KEY in Vercel env vars." });
+    // Pick whichever exists
+    const vectorStores = openai.vectorStores || openai.vector_stores;
+
+    if (!vectorStores?.create) {
+      return json(res, 500, {
+        error: "SESSION FAILED",
+        details: "Vector stores API missing on OpenAI client in this runtime.",
+        debug: { hasVSsnake, hasVScamel, openaiKeys: Object.keys(openai || {}) }
+      });
     }
 
     const body = typeof req.body === "string" ? JSON.parse(req.body) : (req.body || {});
     const title = String(body.title || "Trend Reports Session").slice(0, 80);
 
-    // Create vector store
-    const vs = await openai.vector_stores.create({ name: title });
+    const vs = await vectorStores.create({ name: title });
 
     const createdAt = Date.now();
     const token = makeSessionToken({ vsid: vs.id, createdAt });
@@ -40,10 +51,6 @@ export default async function handler(req, res) {
       expiresInMs: getTtlMs()
     });
   } catch (err) {
-    // CORS already set; return details so browser can read them
-    return json(res, 500, {
-      error: "SESSION FAILED",
-      details: String(err?.message || err)
-    });
+    return json(res, 500, { error: "SESSION FAILED", details: String(err?.message || err) });
   }
 }
