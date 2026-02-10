@@ -1,0 +1,9 @@
+{
+  "name": "trend-report-chat",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "busboy": "^1.6.0",
+    "openai": "^4.0.0"
+  }
+}
