@@ -1,0 +1,464 @@
+<!-- Hackmasters Trend Reports Assistant (Upload + Ask) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<div id="hmTrendChat"></div>
+
+<style>
+  :root{
+    --hm-black:#000000;
+    --hm-white:#FFFFFF;
+    --hm-copper:#D18057;
+  }
+
+  #hmTrendChat *{ box-sizing: border-box; }
+
+  #hmTrendChat .hm-wrap{
+    font-family: "Montserrat", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    background: var(--hm-black);
+    color: var(--hm-white);
+    border: 1px solid var(--hm-copper);
+    padding: 18px;
+    letter-spacing: 0.2px;
+  }
+
+  #hmTrendChat .hm-title{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin: 0 0 14px 0;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    font-size: 14px;
+    color: var(--hm-white);
+  }
+
+  #hmTrendChat .hm-title .hm-badge{
+    display:inline-block;
+    border: 1px solid var(--hm-copper);
+    padding: 6px 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.4px;
+    font-size: 12px;
+    color: var(--hm-copper);
+  }
+
+  #hmTrendChat .hm-sub{
+    margin: 0 0 14px 0;
+    font-size: 12px;
+    line-height: 1.5;
+    color: rgba(255,255,255,0.85);
+    text-transform: none;
+    letter-spacing: 0.2px;
+  }
+
+  #hmTrendChat .hm-row{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+    margin: 10px 0;
+  }
+
+  #hmTrendChat .hm-btn{
+    appearance:none;
+    background: transparent;
+    color: var(--hm-white);
+    border: 1px solid var(--hm-copper);
+    padding: 10px 12px;
+    cursor:pointer;
+    text-transform: uppercase;
+    letter-spacing: 1.1px;
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 1;
+    border-radius: 0;
+    transition: background 120ms linear, color 120ms linear;
+  }
+  #hmTrendChat .hm-btn:hover{
+    background: var(--hm-copper);
+    color: var(--hm-black);
+  }
+  #hmTrendChat .hm-btn:disabled{
+    opacity: 0.55;
+    cursor:not-allowed;
+  }
+
+  #hmTrendChat .hm-status{
+    margin-left:auto;
+    font-size: 12px;
+    letter-spacing: 0.9px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.85);
+  }
+  #hmTrendChat .hm-status.is-error{ color: var(--hm-copper); }
+
+  #hmTrendChat .hm-divider{
+    height: 1px;
+    background: rgba(209,128,87,0.45);
+    margin: 14px 0;
+  }
+
+  /* Upload */
+  #hmTrendChat .hm-file{
+    flex: 1 1 auto;
+    min-width: 220px;
+    border: 1px solid var(--hm-copper);
+    padding: 10px 12px;
+    color: rgba(255,255,255,0.85);
+    background: transparent;
+    border-radius: 0;
+    font-size: 12px;
+    text-transform: none;
+  }
+  #hmTrendChat input[type="file"]::file-selector-button{
+    border: 1px solid var(--hm-copper);
+    background: transparent;
+    color: var(--hm-white);
+    padding: 8px 10px;
+    border-radius: 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+    cursor:pointer;
+    margin-right: 10px;
+  }
+  #hmTrendChat input[type="file"]::file-selector-button:hover{
+    background: var(--hm-copper);
+    color: var(--hm-black);
+  }
+
+  /* Prompt tiles (like Hyper Island cards but on-brand) */
+  #hmTrendChat .hm-prompts{
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+  }
+  #hmTrendChat .hm-prompt{
+    text-align:left;
+    padding: 12px;
+    border: 1px solid var(--hm-copper);
+    background: rgba(255,255,255,0.02);
+    color: var(--hm-white);
+    border-radius: 0;
+    cursor:pointer;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0.2px;
+    font-size: 13px;
+    line-height: 1.35;
+  }
+  #hmTrendChat .hm-prompt:hover{
+    background: rgba(209,128,87,0.18);
+  }
+
+  /* Chat transcript */
+  #hmTrendChat .hm-chat{
+    margin-top: 14px;
+    border: 1px solid var(--hm-copper);
+    background: rgba(255,255,255,0.02);
+    padding: 12px;
+    max-height: 420px;
+    overflow:auto;
+  }
+
+  #hmTrendChat .hm-msg{
+    border: 1px solid rgba(209,128,87,0.55);
+    padding: 10px 12px;
+    margin: 0 0 10px 0;
+    border-radius: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    line-height: 1.6;
+    font-size: 13px;
+  }
+  #hmTrendChat .hm-msg.hm-me{
+    background: rgba(209,128,87,0.10);
+  }
+  #hmTrendChat .hm-msg.hm-ai{
+    background: rgba(255,255,255,0.01);
+  }
+  #hmTrendChat .hm-msg-title{
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--hm-copper);
+    font-size: 12px;
+    margin-bottom: 6px;
+  }
+
+  /* Input bar */
+  #hmTrendChat .hm-inputRow{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    margin-top: 12px;
+  }
+  #hmTrendChat .hm-input{
+    width:100%;
+    display:block;
+    background: transparent;
+    color: var(--hm-white);
+    border: 1px solid var(--hm-copper);
+    padding: 12px;
+    border-radius: 0;
+    outline:none;
+    font-size: 13px;
+  }
+  #hmTrendChat .hm-input::placeholder{
+    color: rgba(255,255,255,0.65);
+  }
+</style>
+
+<script>
+(() => {
+  // =========================
+  // CONFIG
+  // =========================
+  const API_BASE = "trend-report-platform.vercel.app"; // no trailing slash
+  const DEMO_TOKEN = ""; // optional; leave "" to disable
+
+  const mount = document.getElementById("hmTrendChat");
+  mount.innerHTML = `
+    <div class="hm-wrap">
+      <div class="hm-title">
+        <span class="hm-badge">HACKMASTERS</span>
+        <span>TRENDS AI ASSISTANT</span>
+      </div>
+      <p class="hm-sub">
+        Upload trend reports (PDF) and ask questions grounded in your documents.
+      </p>
+
+      <div class="hm-row">
+        <button class="hm-btn" id="hmNewSession">NEW SESSION</button>
+        <button class="hm-btn" id="hmReset">RESET (DELETE DOCS)</button>
+        <div class="hm-status" id="hmStatus">READY</div>
+      </div>
+
+      <div class="hm-divider"></div>
+
+      <div class="hm-row">
+        <input class="hm-file" type="file" id="hmFiles" accept="application/pdf" multiple />
+        <button class="hm-btn" id="hmUpload">UPLOAD PDFS</button>
+      </div>
+
+      <div class="hm-prompts">
+        <button class="hm-prompt" data-prompt="What are the key trends across these reports?">What are the key trends across these reports?</button>
+        <button class="hm-prompt" data-prompt="Summarize insights related to AI across the documents.">Summarize insights related to AI across the documents.</button>
+        <button class="hm-prompt" data-prompt="What do these reports say about consumer behavior and cultural change?">What do these reports say about consumer behavior and cultural change?</button>
+        <button class="hm-prompt" data-prompt="Compare themes across documents and highlight any contradictions.">Compare themes across documents and highlight any contradictions.</button>
+      </div>
+
+      <div class="hm-chat" id="hmChat"></div>
+
+      <div class="hm-inputRow">
+        <input class="hm-input" id="hmQ" placeholder="ASK ABOUT TRENDS, INSIGHTS, OR A SPECIFIC REPORT…" />
+        <button class="hm-btn" id="hmAsk">SEND</button>
+      </div>
+    </div>
+  `;
+
+  const statusEl = mount.querySelector("#hmStatus");
+  const fileEl = mount.querySelector("#hmFiles");
+  const uploadBtn = mount.querySelector("#hmUpload");
+  const askBtn = mount.querySelector("#hmAsk");
+  const qEl = mount.querySelector("#hmQ");
+  const chatEl = mount.querySelector("#hmChat");
+  const newBtn = mount.querySelector("#hmNewSession");
+  const resetBtn = mount.querySelector("#hmReset");
+
+  const LS_KEY = "hm_trendchat_sessionToken";
+  let sessionToken = localStorage.getItem(LS_KEY) || "";
+  let history = [];
+
+  function setStatus(text, isError=false){
+    statusEl.textContent = text || "";
+    statusEl.classList.toggle("is-error", !!isError);
+  }
+
+  function headersJson(extra={}){
+    const h = { "Content-Type":"application/json", ...extra };
+    if (DEMO_TOKEN) h["Authorization"] = "Bearer " + DEMO_TOKEN;
+    if (sessionToken) h["x-session-token"] = sessionToken;
+    return h;
+  }
+
+  function headersForm(){
+    const h = {};
+    if (DEMO_TOKEN) h["Authorization"] = "Bearer " + DEMO_TOKEN;
+    if (sessionToken) h["x-session-token"] = sessionToken;
+    return h;
+  }
+
+  function addMsg(who, text){
+    const wrap = document.createElement("div");
+    wrap.className = "hm-msg " + (who === "me" ? "hm-me" : "hm-ai");
+
+    const title = document.createElement("div");
+    title.className = "hm-msg-title";
+    title.textContent = who === "me" ? "YOU" : "ASSISTANT";
+
+    const body = document.createElement("div");
+    body.textContent = text || "";
+
+    wrap.appendChild(title);
+    wrap.appendChild(body);
+    chatEl.appendChild(wrap);
+    chatEl.scrollTop = chatEl.scrollHeight;
+  }
+
+  async function ensureSession(){
+    if (sessionToken) return;
+    setStatus("CREATING SESSION…");
+    const resp = await fetch(API_BASE + "/api/session", {
+      method:"POST",
+      headers: headersJson(),
+      body: JSON.stringify({ title: "Trend Reports Session" })
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) throw new Error(data.error || "SESSION FAILED");
+    sessionToken = data.sessionToken;
+    localStorage.setItem(LS_KEY, sessionToken);
+    setStatus("SESSION READY");
+  }
+
+  async function uploadFiles(){
+    const files = Array.from(fileEl.files || []);
+    if (!files.length) return setStatus("CHOOSE PDFS FIRST", true);
+
+    await ensureSession();
+
+    setStatus("UPLOADING…");
+    uploadBtn.disabled = true;
+    askBtn.disabled = true;
+
+    try{
+      const form = new FormData();
+      files.forEach(f => form.append("file", f, f.name));
+
+      const resp = await fetch(API_BASE + "/api/upload", {
+        method:"POST",
+        headers: headersForm(),
+        body: form
+      });
+
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error((data.error || "UPLOAD FAILED") + (data.details ? " — " + data.details : ""));
+
+      const list = (data.uploaded || []).map(x => "- " + x.filename).join("\n");
+      addMsg("ai", "UPLOADED:\n" + (list || "(NO VALID PDFS DETECTED)"));
+      setStatus("UPLOAD COMPLETE");
+      fileEl.value = "";
+    } catch(e){
+      setStatus("UPLOAD ERROR", true);
+      addMsg("ai", "UPLOAD ERROR: " + (e.message || e));
+    } finally {
+      uploadBtn.disabled = false;
+      askBtn.disabled = false;
+    }
+  }
+
+  async function ask(question){
+    const q = (question || "").trim();
+    if (!q) return;
+
+    await ensureSession();
+
+    addMsg("me", q);
+    setStatus("THINKING…");
+    askBtn.disabled = true;
+    uploadBtn.disabled = true;
+
+    try{
+      const resp = await fetch(API_BASE + "/api/ask", {
+        method:"POST",
+        headers: headersJson(),
+        body: JSON.stringify({ question: q, history })
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error((data.error || "REQUEST FAILED") + (data.details ? " — " + data.details : ""));
+
+      addMsg("ai", data.answer || "");
+      history = [...history,
+        { role:"user", content: q },
+        { role:"assistant", content: data.answer || "" }
+      ].slice(-16);
+
+      setStatus("DONE");
+    } catch(e){
+      setStatus("ERROR", true);
+      addMsg("ai", "ERROR: " + (e.message || e) + "\n\nIF YOU JUST UPLOADED, WAIT 5–15 SECONDS AND TRY AGAIN (INDEXING).");
+    } finally {
+      askBtn.disabled = false;
+      uploadBtn.disabled = false;
+    }
+  }
+
+  // Events
+  uploadBtn.addEventListener("click", uploadFiles);
+
+  askBtn.addEventListener("click", () => {
+    const q = (qEl.value || "").trim();
+    if (!q) return;
+    qEl.value = "";
+    ask(q);
+  });
+
+  qEl.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      askBtn.click();
+    }
+  });
+
+  mount.querySelectorAll(".hm-prompt").forEach(btn => {
+    btn.addEventListener("click", () => ask(btn.getAttribute("data-prompt")));
+  });
+
+  newBtn.addEventListener("click", () => {
+    sessionToken = "";
+    localStorage.removeItem(LS_KEY);
+    history = [];
+    chatEl.innerHTML = "";
+    setStatus("NEW SESSION READY (UPLOAD PDFS)");
+  });
+
+  resetBtn.addEventListener("click", async () => {
+    if (!sessionToken) return setStatus("NO SESSION TO RESET", true);
+
+    setStatus("DELETING…");
+    resetBtn.disabled = true;
+    uploadBtn.disabled = true;
+    askBtn.disabled = true;
+
+    try{
+      const resp = await fetch(API_BASE + "/api/reset", {
+        method:"POST",
+        headers: headersJson()
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error((data.error || "RESET FAILED") + (data.details ? " — " + data.details : ""));
+
+      sessionToken = "";
+      localStorage.removeItem(LS_KEY);
+      history = [];
+      chatEl.innerHTML = "";
+      setStatus("DELETED. START NEW SESSION.");
+    } catch(e){
+      setStatus("RESET ERROR", true);
+      addMsg("ai", "RESET ERROR: " + (e.message || e));
+    } finally {
+      resetBtn.disabled = false;
+      uploadBtn.disabled = false;
+      askBtn.disabled = false;
+    }
+  });
+
+  setStatus(sessionToken ? "SESSION READY" : "READY (UPLOAD PDFS)");
+})();
+</script>
