@@ -327,41 +327,63 @@
     setStatus("SESSION READY");
   }
 
-  async function uploadFiles(){
-    const files = Array.from(fileEl.files || []);
-    if (!files.length) return setStatus("CHOOSE PDFS FIRST", true);
+async function uploadFiles() {
+  const files = Array.from(fileEl.files || []);
+  if (!files.length) return setStatus("CHOOSE PDFS FIRST", true);
 
-    await ensureSession();
-
-    setStatus("UPLOADING…");
-    uploadBtn.disabled = true;
-    askBtn.disabled = true;
-
-    try{
-      const form = new FormData();
-      files.forEach(f => form.append("file", f, f.name));
-
-      const resp = await fetch(API_BASE + "/api/upload", {
-        method:"POST",
-        headers: headersForm(),
-        body: form
-      });
-
-      const data = await resp.json().catch(() => ({}));
-      if (!resp.ok) throw new Error((data.error || "UPLOAD FAILED") + (data.details ? " — " + data.details : ""));
-
-      const list = (data.uploaded || []).map(x => "- " + x.filename).join("\n");
-      addMsg("ai", "UPLOADED:\n" + (list || "(NO VALID PDFS DETECTED)"));
-      setStatus("UPLOAD COMPLETE");
-      fileEl.value = "";
-    } catch(e){
-      setStatus("UPLOAD ERROR", true);
-      addMsg("ai", "UPLOAD ERROR: " + (e.message || e));
-    } finally {
-      uploadBtn.disabled = false;
-      askBtn.disabled = false;
-    }
+  // ✅ Size gate BEFORE any network request
+  const MAX_MB = 4;
+  const tooBig = files.find(f => f.size > MAX_MB * 1024 * 1024);
+  if (tooBig) {
+    setStatus(
+      `FILE TOO LARGE: ${tooBig.name} (${Math.round(tooBig.size / 1024 / 1024)}MB). MAX ${MAX_MB}MB`,
+      true
+    );
+    return;
   }
+
+  // (optional but recommended) only accept PDFs
+  const notPdf = files.find(f => !String(f.name || "").toLowerCase().endsWith(".pdf"));
+  if (notPdf) {
+    setStatus(`ONLY PDFS ALLOWED: ${notPdf.name}`, true);
+    return;
+  }
+
+  await ensureSession();
+
+  setStatus("UPLOADING…");
+  uploadBtn.disabled = true;
+  askBtn.disabled = true;
+
+  try {
+    const form = new FormData();
+    files.forEach(f => form.append("file", f, f.name));
+
+    const resp = await fetch(API_BASE + "/api/upload", {
+      method: "POST",
+      headers: headersForm(), // IMPORTANT: must NOT set Content-Type manually for FormData
+      body: form
+    });
+
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) {
+      throw new Error(
+        (data.error || "UPLOAD FAILED") + (data.details ? " — " + data.details : "")
+      );
+    }
+
+    const list = (data.uploaded || []).map(x => "- " + x.filename).join("\n");
+    addMsg("ai", "UPLOADED:\n" + (list || "(NO VALID PDFS DETECTED)"));
+    setStatus("UPLOAD COMPLETE");
+    fileEl.value = "";
+  } catch (e) {
+    setStatus("UPLOAD ERROR", true);
+    addMsg("ai", "UPLOAD ERROR: " + (e.message || e));
+  } finally {
+    uploadBtn.disabled = false;
+    askBtn.disabled = false;
+  }
+}
 
   async function ask(question){
     const q = (question || "").trim();

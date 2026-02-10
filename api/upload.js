@@ -5,6 +5,7 @@ import path from "path";
 import { openai } from "../lib/openaiClient.js";
 import { setCors, handleOptions, requireDemoToken } from "../lib/cors.js";
 import { readSessionToken, isExpired } from "../lib/sessionToken.js";
+import { getVectorStores } from "../lib/vs.js";
 
 function json(res, status, payload) {
   res.statusCode = status;
@@ -13,7 +14,10 @@ function json(res, status, payload) {
 }
 
 async function safeDeleteVectorStore(vectorStoreId) {
-  try { await openai.vector_stores.del(vectorStoreId); } catch {}
+  try {
+    const vectorStores = getVectorStores(openai);
+    if (vectorStores?.del) await vectorStores.del(vectorStoreId);
+  } catch {}
 }
 
 export default async function handler(req, res) {
@@ -32,7 +36,19 @@ export default async function handler(req, res) {
     return json(res, 410, { error: "Session expired. Please start a new session." });
   }
 
-  const bb = Busboy({ headers: req.headers, limits: { files: 5, fileSize: 25 * 1024 * 1024 } });
+  // ✅ Get vectorStores once (and validate)
+  const vectorStores = getVectorStores(openai);
+  if (!vectorStores?.files?.create) {
+    return json(res, 500, {
+      error: "Upload failed",
+      details: "Vector store files API missing (vectorStores.files.create not available)."
+    });
+  }
+
+  const bb = Busboy({
+    headers: req.headers,
+    limits: { files: 5, fileSize: 25 * 1024 * 1024 }
+  });
 
   const uploaded = [];
   const tasks = [];
@@ -46,7 +62,11 @@ export default async function handler(req, res) {
       return;
     }
 
-    const tmpPath = path.join(os.tmpdir(), `${Date.now()}-${filename.replace(/[^\w.\-]/g, "_")}`);
+    const tmpPath = path.join(
+      os.tmpdir(),
+      `${Date.now()}-${filename.replace(/[^\w.\-]/g, "_")}`
+    );
+
     const writeStream = fs.createWriteStream(tmpPath);
     file.pipe(writeStream);
 
@@ -58,7 +78,8 @@ export default async function handler(req, res) {
             purpose: "assistants"
           });
 
-          await openai.vector_stores.files.create(session.vsid, { file_id: createdFile.id });
+          
+          await vectorStores.files.create(session.vsid, { file_id: createdFile.id });
 
           uploaded.push({ fileId: createdFile.id, filename });
           fs.unlink(tmpPath, () => {});
@@ -80,7 +101,10 @@ export default async function handler(req, res) {
       await Promise.all(tasks);
       return json(res, 200, { uploaded });
     } catch (err) {
-      return json(res, 500, { error: "Upload failed", details: String(err?.message || err) });
+      return json(res, 500, {
+        error: "Upload failed",
+        details: String(err?.message || err)
+      });
     }
   });
 
