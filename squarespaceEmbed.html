@@ -420,58 +420,56 @@
     setStatus("SESSION READY");
   }
 
-  async function uploadFiles() {
-    const files = Array.from(fileEl.files || []);
-    if (!files.length) return setStatus("CHOOSE PDFS FIRST", true);
+async function uploadFiles() {
+  const files = Array.from(fileEl.files || []);
+  if (!files.length) return setStatus("CHOOSE PDFS FIRST", true);
 
-    setStatus("UPLOADING TO BLOB…");
-    uploadBtn.disabled = true;
-    askBtn.disabled = true;
+  setStatus("UPLOADING…");
+  uploadBtn.disabled = true;
+  askBtn.disabled = true;
 
-    try {
-      for (const file of files) {
+  try {
+    // Import Vercel Blob client uploader (works in browser)
+    const { upload } = await import("https://esm.sh/@vercel/blob@2.0.0/client");
 
-        // 1) Ask backend for signed Blob upload URL
-        const urlResp = await fetch(API_BASE + "/api/blob-upload-url", {
-          method: "POST",
-          headers: headersJson(),
-          body: JSON.stringify({ filename: file.name })
-        });
-
-        const urlData = await urlResp.json();
-        if (!urlResp.ok) throw new Error(urlData.error || "BLOB URL FAILED");
-
-        const uploadUrl = urlData.url;
-
-        // 2) Upload file directly into Blob
-        await fetch(uploadUrl, {
-          method: "PUT",
-          body: file
-        });
-
-        // 3) Tell backend to ingest Blob → OpenAI
-        const ingestResp = await fetch(API_BASE + "/api/ingest", {
-          method: "POST",
-          headers: headersJson(),
-          body: JSON.stringify({ blobUrl: uploadUrl })
-        });
-
-        const ingestData = await ingestResp.json();
-        if (!ingestResp.ok) throw new Error(ingestData.error || "INGEST FAILED");
+    for (const file of files) {
+      if (!String(file.name).toLowerCase().endsWith(".pdf")) {
+        throw new Error("ONLY PDFS ALLOWED: " + file.name);
       }
 
-      setStatus("UPLOAD COMPLETE");
-      addMsg("ai", "PDFS ADDED TO TREND LIBRARY ✅");
+      // Upload directly from browser → Vercel Blob
+      const blob = await upload(file.name, file, {
+        access: "public",
+        handleUploadUrl: API_BASE + "/api/blob-upload-url",
+        // If you're using DEMO_TOKEN auth, pass headers:
+        headers: DEMO_TOKEN ? { Authorization: "Bearer " + DEMO_TOKEN } : undefined
+      });
 
-    } catch (err) {
-      setStatus("UPLOAD ERROR", true);
-      addMsg("ai", "UPLOAD ERROR: " + err.message);
+      // Now ingest blob into OpenAI vector store
+      const ingestResp = await fetch(API_BASE + "/api/ingest", {
+        method: "POST",
+        headers: headersJson(),
+        body: JSON.stringify({ blobUrl: blob.url, filename: file.name })
+      });
 
-    } finally {
-      uploadBtn.disabled = false;
-      askBtn.disabled = false;
+      const ingestData = await ingestResp.json().catch(() => ({}));
+      if (!ingestResp.ok) {
+        throw new Error((ingestData.error || "INGEST FAILED") + (ingestData.details ? " — " + ingestData.details : ""));
+      }
     }
+
+    addMsg("ai", "PDFS ADDED TO TREND LIBRARY ✅");
+    setStatus("UPLOAD COMPLETE");
+    fileEl.value = "";
+  } catch (err) {
+    setStatus("UPLOAD ERROR", true);
+    addMsg("ai", "UPLOAD ERROR: " + (err?.message || err));
+  } finally {
+    uploadBtn.disabled = false;
+    askBtn.disabled = false;
   }
+}
+
 
 
   async function ask(question){

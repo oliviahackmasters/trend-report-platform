@@ -1,7 +1,6 @@
 import fs from "fs";
 import os from "os";
 import path from "path";
-import fetch from "node-fetch";
 
 import { openai } from "../lib/openaiClient.js";
 import { getVectorStores } from "../lib/vs.js";
@@ -26,7 +25,8 @@ export default async function handler(req, res) {
     ? JSON.parse(req.body)
     : req.body;
 
-  const blobUrl = body?.blobUrl;
+  const { blobUrl, filename } = body || {};
+
 
   if (!blobUrl) {
     return json(res, 400, { error: "Missing blobUrl" });
