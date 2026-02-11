@@ -32,11 +32,11 @@ export default async function handler(req, res) {
   if (!session?.vsid) return json(res, 400, { error: "Missing/invalid session token." });
 
   if (isExpired(session.createdAt)) {
-    await safeDeleteVectorStore(session.vsid);
     return json(res, 410, { error: "Session expired. Please start a new session." });
   }
 
-  // ✅ Get vectorStores once (and validate)
+
+  // Get vectorStores once (and validate)
   const vectorStores = getVectorStores(openai);
   if (!vectorStores?.files?.create) {
     return json(res, 500, {

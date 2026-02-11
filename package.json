@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@vercel/blob": "^2.2.0",
     "busboy": "^1.6.0",
     "openai": "^4.0.0"
   }
