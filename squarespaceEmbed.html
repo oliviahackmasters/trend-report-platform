@@ -282,6 +282,56 @@
 
 #hmTrendChat .hm-hidden{ display:none !important; }
 
+  /* Future Map */
+  #hmTrendChat .hm-mapWrap{
+    border: 1px solid var(--hm-copper);
+    background: rgba(255,255,255,0.02);
+    padding: 12px;
+    margin-top: 10px;
+  }
+  #hmTrendChat .hm-mapTop{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom: 10px;
+  }
+  #hmTrendChat .hm-mapTitle{
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:1.2px;
+    color: var(--hm-copper);
+    font-size: 12px;
+    margin: 0;
+  }
+  #hmTrendChat .hm-mapControls{
+    display:flex;
+    gap:10px;
+    flex: 1 1 auto;
+    align-items:center;
+    justify-content:flex-end;
+    flex-wrap:wrap;
+  }
+  #hmTrendChat .hm-mapInput{
+    flex: 1 1 320px;
+    min-width: 220px;
+    background: transparent;
+    color: var(--hm-white);
+    border: 1px solid var(--hm-copper);
+    padding: 10px 12px;
+    border-radius: 0;
+    outline:none;
+    font-size: 13px;
+  }
+  #hmTrendChat .hm-mapSvg{
+    width: 100%;
+    display:block;
+    border: 1px solid rgba(209,128,87,0.45);
+    background: #000;
+  }
+
+
 </style>
 
 <script>
@@ -334,6 +384,67 @@
       </div>
       <div id="hmLibrary" style="margin-top:10px;"></div>
 
+      <div class="hm-mapWrap">
+  <div class="hm-mapTop">
+    <div class="hm-mapTitle">FUTURE MAP</div>
+    <div class="hm-mapControls">
+      <input class="hm-mapInput" id="hmMapTheme" placeholder="Generate a future map based on… (e.g. Retail, Health, AI in education)" />
+      <button class="hm-btn" id="hmMapGen">GENERATE</button>
+      <button class="hm-btn" id="hmMapPng" disabled>DOWNLOAD PNG</button>
+    </div>
+  </div>
+
+  <svg id="hmFutureMap" class="hm-mapSvg" viewBox="0 0 1200 675" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Future Map">
+    <rect x="0" y="0" width="1200" height="675" fill="#000"/>
+
+    <!-- Title -->
+    <text x="30" y="55" fill="#FFFFFF" font-size="44" font-family="Montserrat, system-ui, sans-serif" font-weight="700">FUTURE MAP</text>
+    <text id="hmMapThemeLabel" x="30" y="90" fill="#D18057" font-size="18" font-family="Montserrat, system-ui, sans-serif" font-weight="600"></text>
+
+    <!-- Central shape (simple radar-ish look) -->
+    <g opacity="0.35" fill="none" stroke="#FFFFFF">
+      <polygon points="600,150 760,230 735,410 600,510 465,410 440,230" />
+      <polygon points="600,190 725,255 705,395 600,470 495,395 475,255" />
+      <polygon points="600,235 690,280 675,380 600,430 525,380 510,280" />
+    </g>
+
+      <!-- Lens blocks (positions tuned for readability) -->
+      <g font-family="Montserrat, system-ui, sans-serif">
+        <!-- PROFIT / MODELS (top-left) -->
+        <text x="60" y="170" fill="#FFFFFF" font-size="16" font-weight="700">PROFIT / MODELS</text>
+        <text id="lens_profit_models" x="60" y="195" fill="#D18057" font-size="14" font-weight="600"></text>
+
+        <!-- PEOPLE / ATTITUDES + BEHAVIOURS (top-center) -->
+        <text x="430" y="140" fill="#FFFFFF" font-size="16" font-weight="700">PEOPLE / ATTITUDES + BEHAVIOURS</text>
+        <text id="lens_people_attitudes_behaviours" x="430" y="165" fill="#D18057" font-size="14" font-weight="600"></text>
+
+        <!-- POLITICS / REGULATION (top-right) -->
+        <text x="820" y="170" fill="#FFFFFF" font-size="16" font-weight="700">POLITICS / REGULATION</text>
+        <text id="lens_politics_regulation" x="820" y="195" fill="#D18057" font-size="14" font-weight="600"></text>
+
+        <!-- PROSPERITY / ECONOMIC FACTORS (right) -->
+        <text x="860" y="335" fill="#FFFFFF" font-size="16" font-weight="700">PROSPERITY / ECONOMIC FACTORS</text>
+        <text id="lens_prosperity_economic_factors" x="860" y="360" fill="#D18057" font-size="14" font-weight="600"></text>
+
+        <!-- PLANET / SUSTAINABILITY (bottom-right) -->
+        <text x="740" y="545" fill="#FFFFFF" font-size="16" font-weight="700">PLANET / SUSTAINABILITY</text>
+        <text id="lens_planet_sustainability" x="740" y="570" fill="#D18057" font-size="14" font-weight="600"></text>
+
+        <!-- PLACES / CHANNELS (bottom-left) -->
+        <text x="60" y="560" fill="#FFFFFF" font-size="16" font-weight="700">PLACES / CHANNELS</text>
+        <text id="lens_places_channels" x="60" y="585" fill="#D18057" font-size="14" font-weight="600"></text>
+
+        <!-- POTENTIAL / CAPABILITY (left) -->
+        <text x="60" y="360" fill="#FFFFFF" font-size="16" font-weight="700">POTENTIAL / CAPABILITY</text>
+        <text id="lens_potential_capability" x="60" y="385" fill="#D18057" font-size="14" font-weight="600"></text>
+      </g>
+
+      <!-- Footer -->
+      <text x="30" y="650" fill="#D18057" font-size="14" font-family="Montserrat, system-ui, sans-serif" font-weight="600">HACKMASTERS © 2026</text>
+    </svg>
+  </div>
+
+
 
       <div class="hm-divider"></div>
 
@@ -358,6 +469,13 @@
   const tagYearEl = mount.querySelector("#hmTagYear");
   const tagCompanyEl = mount.querySelector("#hmTagCompany");
   const tagTopicsEl = mount.querySelector("#hmTagTopics");
+
+    const mapThemeEl = mount.querySelector("#hmMapTheme");
+  const mapGenBtn = mount.querySelector("#hmMapGen");
+  const mapPngBtn = mount.querySelector("#hmMapPng");
+  const mapSvg = mount.querySelector("#hmFutureMap");
+  const mapThemeLabel = mount.querySelector("#hmMapThemeLabel");
+
 
   const LS_KEY = "hm_trendchat_sessionToken";
   let sessionToken = localStorage.getItem(LS_KEY) || "";
@@ -675,4 +793,150 @@ let libVisible = true;
   setStatus(sessionToken ? "SESSION READY" : "READY (UPLOAD PDFS)");
   refreshLibrary();
 })();
+
+// future map
+
+  function wrapLines(str, maxChars){
+    const words = String(str || "").split(/\s+/).filter(Boolean);
+    const lines = [];
+    let line = "";
+    for (const w of words){
+      const next = (line ? line + " " : "") + w;
+      if (next.length > maxChars){
+        if (line) lines.push(line);
+        line = w;
+      } else {
+        line = next;
+      }
+    }
+    if (line) lines.push(line);
+    return lines;
+  }
+
+  function setLensText(id, bullets){
+    const el = mount.querySelector("#" + id);
+    if (!el) return;
+    // clear existing tspans
+    while (el.firstChild) el.removeChild(el.firstChild);
+
+    const items = Array.isArray(bullets) ? bullets : [];
+    const maxBullets = 6;
+
+    let y = 0;
+    for (const b of items.slice(0, maxBullets)){
+      const lines = wrapLines("• " + b, 34);
+      for (const ln of lines){
+        const t = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
+        t.setAttribute("x", el.getAttribute("x"));
+        t.setAttribute("dy", y === 0 ? "0" : "18");
+        t.textContent = ln;
+        el.appendChild(t);
+        y++;
+      }
+      // small gap between bullets
+      const gap = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
+      gap.setAttribute("x", el.getAttribute("x"));
+      gap.setAttribute("dy", "8");
+      gap.textContent = "";
+      el.appendChild(gap);
+      y++;
+    }
+  }
+
+  function renderFutureMap(data){
+    const theme = String(data?.theme || "").trim();
+    mapThemeLabel.textContent = theme ? `THEME: ${theme}` : "";
+
+    const lenses = data?.lenses || {};
+    setLensText("lens_people_attitudes_behaviours", lenses.people_attitudes_behaviours);
+    setLensText("lens_politics_regulation", lenses.politics_regulation);
+    setLensText("lens_prosperity_economic_factors", lenses.prosperity_economic_factors);
+    setLensText("lens_planet_sustainability", lenses.planet_sustainability);
+    setLensText("lens_places_channels", lenses.places_channels);
+    setLensText("lens_potential_capability", lenses.potential_capability);
+    setLensText("lens_profit_models", lenses.profit_models);
+
+    mapPngBtn.disabled = false;
+  }
+
+  async function generateFutureMap(){
+    const theme = (mapThemeEl.value || "").trim();
+    if (!theme) return addSys("ENTER A THEME FOR THE FUTURE MAP", true);
+
+    addSys("GENERATING FUTURE MAP…");
+    mapGenBtn.disabled = true;
+    mapPngBtn.disabled = true;
+
+    try{
+      const resp = await fetch(API_BASE + "/api/future-map", {
+        method: "POST",
+        headers: headersJson(),
+        body: JSON.stringify({ theme })
+      });
+      const data = await resp.json().catch(()=>({}));
+      if (!resp.ok) throw new Error((data.error || "FUTURE MAP FAILED") + (data.details ? " — " + data.details : ""));
+
+      renderFutureMap(data);
+      addSys("FUTURE MAP READY ✅");
+    } catch(e){
+      addSys("FUTURE MAP ERROR: " + (e.message || e), true);
+    } finally {
+      mapGenBtn.disabled = false;
+    }
+  }
+
+  async function downloadFutureMapPng(){
+    try{
+      // serialize svg
+      const serializer = new XMLSerializer();
+      const svgText = serializer.serializeToString(mapSvg);
+
+      const svgBlob = new Blob([svgText], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(svgBlob);
+
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = url;
+      });
+
+      const canvas = document.createElement("canvas");
+      canvas.width = 2400;   // 2x for sharpness
+      canvas.height = 1350;
+
+      const ctx = canvas.getContext("2d");
+      // black background
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      URL.revokeObjectURL(url);
+
+      const theme = (mapThemeEl.value || "future-map").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      const a = document.createElement("a");
+      a.download = `future-map-${theme}.png`;
+      a.href = canvas.toDataURL("image/png");
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (e) {
+      addSys("PNG DOWNLOAD FAILED: " + (e.message || e), true);
+    }
+  }
+
+    mapGenBtn.addEventListener("click", generateFutureMap);
+  mapPngBtn.addEventListener("click", downloadFutureMapPng);
+
+  mapThemeEl.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      mapGenBtn.click();
+    }
+  });
+
+
 </script>
