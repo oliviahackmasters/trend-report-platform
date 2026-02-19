@@ -56,7 +56,7 @@ export default async function handler(req, res) {
       model,
       input,
       tools: [{ type: "file_search", vector_store_ids: [session.vsid] }],
-      max_output_tokens: 900
+      max_output_tokens: 1500
     });
 
     return json(res, 200, { answer: resp.output_text || "" });

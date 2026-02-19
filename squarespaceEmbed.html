@@ -61,6 +61,15 @@
     margin: 10px 0;
   }
 
+  #hmTrendChat .hm-textarea{
+      resize: none;
+      overflow: hidden;
+      min-height: 44px;
+      max-height: 160px;   /* cap so it doesn't take over the page */
+      line-height: 1.4;
+    }
+
+
   #hmTrendChat .hm-btn{
     appearance:none;
     background: transparent;
@@ -156,7 +165,7 @@
     border: 1px solid var(--hm-copper);
     background: rgba(255,255,255,0.02);
     padding: 12px;
-    max-height: 420px;
+    max-height: 650px;
     overflow:auto;
   }
 
@@ -255,6 +264,24 @@
     display:flex;
     gap:8px;
   }
+
+
+  /* Library toggle */
+#hmTrendChat .hm-libHeader{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-top: 10px;
+}
+
+#hmTrendChat .hm-libToggle{
+  padding: 8px 10px;
+  font-size: 11px;
+}
+
+#hmTrendChat .hm-hidden{ display:none !important; }
+
 </style>
 
 <script>
@@ -301,14 +328,19 @@
 
       <div class="hm-divider"></div>
 
+      <div class="hm-libHeader">
+        <div class="hm-lib-title" style="margin:0;">LIBRARY</div>
+        <button class="hm-btn hm-libToggle" id="hmLibToggle">HIDE</button>
+      </div>
       <div id="hmLibrary" style="margin-top:10px;"></div>
+
 
       <div class="hm-divider"></div>
 
       <div class="hm-chat" id="hmChat"></div>
 
       <div class="hm-inputRow">
-        <input class="hm-input" id="hmQ" placeholder="ASK ABOUT TRENDS, INSIGHTS, OR A SPECIFIC REPORT…" />
+        <textarea class="hm-input hm-textarea" id="hmQ" rows="1" placeholder="ASK ABOUT TRENDS, INSIGHTS, OR A SPECIFIC REPORT…"></textarea>
         <button class="hm-btn" id="hmAsk">SEND</button>
       </div>
     </div>
@@ -335,6 +367,25 @@
     statusEl.textContent = text || "";
     statusEl.classList.toggle("is-error", !!isError);
   }
+
+  const libToggleBtn = mount.querySelector("#hmLibToggle");
+
+let libVisible = true;
+  libToggleBtn.addEventListener("click", () => {
+    libVisible = !libVisible;
+    libEl.classList.toggle("hm-hidden", !libVisible);
+    libToggleBtn.textContent = libVisible ? "HIDE" : "SHOW";
+  });
+
+  function autoSizeTextarea(el){
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 160) + "px";
+  }
+
+  qEl.addEventListener("input", () => autoSizeTextarea(qEl));
+  autoSizeTextarea(qEl);
+
+
 
   function headersJson(extra={}){
     const h = { "Content-Type":"application/json", ...extra };
@@ -602,11 +653,12 @@
   });
 
   qEl.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
       e.preventDefault();
       askBtn.click();
     }
   });
+
 
   mount.querySelectorAll(".hm-prompt").forEach(btn => {
     btn.addEventListener("click", () => ask(btn.getAttribute("data-prompt")));
