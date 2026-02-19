@@ -363,19 +363,6 @@
         <button class="hm-btn" id="hmUpload">UPLOAD PDFS</button>
       </div>
 
-      <div class="hm-prompts">
-        <button class="hm-prompt" data-prompt="What are the key trends across these reports?">What are the key trends across these reports?</button>
-        <button class="hm-prompt" data-prompt="Summarize insights related to AI across the documents.">Summarize insights related to AI across the documents.</button>
-        <button class="hm-prompt" data-prompt="What do these reports say about consumer behavior and cultural change?">What do these reports say about consumer behavior and cultural change?</button>
-        <button class="hm-prompt" data-prompt="Compare themes across documents and highlight any contradictions.">Compare themes across documents and highlight any contradictions.</button>
-      </div>
-
-      <div class="hm-row" style="margin-top: 6px;">
-        <input class="hm-input" id="hmTagYear" placeholder="YEAR (e.g. 2024)" style="max-width:160px;" />
-        <input class="hm-input" id="hmTagCompany" placeholder="COMPANY / SOURCE" style="max-width:240px;" />
-        <input class="hm-input" id="hmTagTopics" placeholder="TOPICS (comma separated)" />
-      </div>
-
       <div class="hm-divider"></div>
 
       <div class="hm-libHeader">
@@ -383,9 +370,11 @@
         <button class="hm-btn hm-libToggle" id="hmLibToggle">HIDE</button>
       </div>
       <div id="hmLibrary" style="margin-top:10px;"></div>
+  
+            <div class="hm-divider"></div>
 
-      <div class="hm-mapWrap">
-  <div class="hm-mapTop">
+
+      <div class="hm-mapTop">
     <div class="hm-mapTitle">FUTURE MAP</div>
     <div class="hm-mapControls">
       <input class="hm-mapInput" id="hmMapTheme" placeholder="Generate a future map based on… (e.g. Retail, Health, AI in education)" />
@@ -394,54 +383,56 @@
     </div>
   </div>
 
-  <svg id="hmFutureMap" class="hm-mapSvg" viewBox="0 0 1200 675" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Future Map">
-    <rect x="0" y="0" width="1200" height="675" fill="#000"/>
+      <div class="hm-mapWrap hm-hidden" id="hmMapWrap">
+
+
+
+ <svg id="hmFutureMap" class="hm-mapSvg" viewBox="0 0 1200 750" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Future Map">
+    <rect x="0" y="0" width="1200" height="750" fill="#000"/>
 
     <!-- Title -->
-    <text x="30" y="55" fill="#FFFFFF" font-size="44" font-family="Montserrat, system-ui, sans-serif" font-weight="700">FUTURE MAP</text>
-    <text id="hmMapThemeLabel" x="30" y="90" fill="#D18057" font-size="18" font-family="Montserrat, system-ui, sans-serif" font-weight="600"></text>
+    <text x="30" y="70" fill="#FFFFFF" font-size="54" font-family="Montserrat, system-ui, sans-serif" font-weight="700">FUTURE MAP</text>
+    <text id="hmMapThemeLabel" x="30" y="100" fill="#D18057" font-size="20" font-family="Montserrat, system-ui, sans-serif" font-weight="600"></text>
 
-    <!-- Central shape (simple radar-ish look) -->
-    <g opacity="0.35" fill="none" stroke="#FFFFFF">
-      <polygon points="600,150 760,230 735,410 600,510 465,410 440,230" />
-      <polygon points="600,190 725,255 705,395 600,470 495,395 475,255" />
-      <polygon points="600,235 690,280 675,380 600,430 525,380 510,280" />
+    <!-- Heptagons injected by JS -->
+    <g id="hmHeptagons"></g>
+
+    <!-- LENS HEADERS -->
+    <g font-family="Montserrat, system-ui, sans-serif">
+      <!-- PROFIT / MODELS (upper-left) -->
+      <text x="20" y="210" fill="#FFFFFF" font-size="18" font-weight="700">PROFIT / MODELS</text>
+      <text id="lens_profit_models" x="20" y="238" fill="#D18057" font-size="14" font-weight="400"></text>
+
+      <!-- PEOPLE (top-centre) -->
+      <text x="600" y="120" fill="#FFFFFF" font-size="18" font-weight="700" text-anchor="middle">PEOPLE / ATTITUDES + BEHAVIOURS</text>
+      <text id="lens_people_attitudes_behaviours" x="600" y="140" fill="#D18057" font-size="14" font-weight="400" text-anchor="middle"></text>
+
+      <!-- POLITICS / REGULATION (upper-right) -->
+      <text x="790" y="210" fill="#FFFFFF" font-size="18" font-weight="700">POLITICS / REGULATION</text>
+      <text id="lens_politics_regulation" x="790" y="238" fill="#D18057" font-size="14" font-weight="400"></text>
+
+      <!-- PROSPERITY / ECONOMIC FACTORS (right-mid) -->
+      <text x="790" y="410" fill="#FFFFFF" font-size="18" font-weight="700">PROSPERITY / ECONOMIC FACTORS</text>
+      <text id="lens_prosperity_economic_factors" x="790" y="438" fill="#D18057" font-size="14" font-weight="400"></text>
+
+      <!-- PLANET / SUSTAINABILITY (bottom-right) -->
+      <text x="790" y="620" fill="#FFFFFF" font-size="18" font-weight="700">PLANET / SUSTAINABILITY</text>
+      <text id="lens_planet_sustainability" x="790" y="640" fill="#D18057" font-size="14" font-weight="400"></text>
+
+      <!-- PLACES / CHANNELS (bottom-left) -->
+      <text x="20" y="620" fill="#FFFFFF" font-size="18" font-weight="700">PLACES / CHANNELS</text>
+      <text id="lens_places_channels" x="20" y="640" fill="#D18057" font-size="14" font-weight="400"></text>
+
+      <!-- POTENTIAL / CAPABILITY (left-mid) -->
+      <text x="20" y="410" fill="#FFFFFF" font-size="18" font-weight="700">POTENTIAL / CAPABILITY</text>
+      <text id="lens_potential_capability" x="20" y="438" fill="#D18057" font-size="14" font-weight="400"></text>
     </g>
 
-      <!-- Lens blocks (positions tuned for readability) -->
-      <g font-family="Montserrat, system-ui, sans-serif">
-        <!-- PROFIT / MODELS (top-left) -->
-        <text x="60" y="170" fill="#FFFFFF" font-size="16" font-weight="700">PROFIT / MODELS</text>
-        <text id="lens_profit_models" x="60" y="195" fill="#D18057" font-size="14" font-weight="600"></text>
+    <!-- Footer -->
+    <text x="30" y="740" fill="#D18057" font-size="14" font-family="Montserrat, system-ui, sans-serif" font-weight="600">HACKMASTERS © 2026</text>
+  </svg>
 
-        <!-- PEOPLE / ATTITUDES + BEHAVIOURS (top-center) -->
-        <text x="430" y="140" fill="#FFFFFF" font-size="16" font-weight="700">PEOPLE / ATTITUDES + BEHAVIOURS</text>
-        <text id="lens_people_attitudes_behaviours" x="430" y="165" fill="#D18057" font-size="14" font-weight="600"></text>
 
-        <!-- POLITICS / REGULATION (top-right) -->
-        <text x="820" y="170" fill="#FFFFFF" font-size="16" font-weight="700">POLITICS / REGULATION</text>
-        <text id="lens_politics_regulation" x="820" y="195" fill="#D18057" font-size="14" font-weight="600"></text>
-
-        <!-- PROSPERITY / ECONOMIC FACTORS (right) -->
-        <text x="860" y="335" fill="#FFFFFF" font-size="16" font-weight="700">PROSPERITY / ECONOMIC FACTORS</text>
-        <text id="lens_prosperity_economic_factors" x="860" y="360" fill="#D18057" font-size="14" font-weight="600"></text>
-
-        <!-- PLANET / SUSTAINABILITY (bottom-right) -->
-        <text x="740" y="545" fill="#FFFFFF" font-size="16" font-weight="700">PLANET / SUSTAINABILITY</text>
-        <text id="lens_planet_sustainability" x="740" y="570" fill="#D18057" font-size="14" font-weight="600"></text>
-
-        <!-- PLACES / CHANNELS (bottom-left) -->
-        <text x="60" y="560" fill="#FFFFFF" font-size="16" font-weight="700">PLACES / CHANNELS</text>
-        <text id="lens_places_channels" x="60" y="585" fill="#D18057" font-size="14" font-weight="600"></text>
-
-        <!-- POTENTIAL / CAPABILITY (left) -->
-        <text x="60" y="360" fill="#FFFFFF" font-size="16" font-weight="700">POTENTIAL / CAPABILITY</text>
-        <text id="lens_potential_capability" x="60" y="385" fill="#D18057" font-size="14" font-weight="600"></text>
-      </g>
-
-      <!-- Footer -->
-      <text x="30" y="650" fill="#D18057" font-size="14" font-family="Montserrat, system-ui, sans-serif" font-weight="600">HACKMASTERS © 2026</text>
-    </svg>
   </div>
 
 
@@ -470,11 +461,13 @@
   const tagCompanyEl = mount.querySelector("#hmTagCompany");
   const tagTopicsEl = mount.querySelector("#hmTagTopics");
 
-    const mapThemeEl = mount.querySelector("#hmMapTheme");
+  const mapThemeEl = mount.querySelector("#hmMapTheme");
   const mapGenBtn = mount.querySelector("#hmMapGen");
   const mapPngBtn = mount.querySelector("#hmMapPng");
   const mapSvg = mount.querySelector("#hmFutureMap");
   const mapThemeLabel = mount.querySelector("#hmMapThemeLabel");
+  const mapWrapEl = mount.querySelector("#hmMapWrap");
+
 
 
   const LS_KEY = "hm_trendchat_sessionToken";
@@ -488,7 +481,11 @@
 
   const libToggleBtn = mount.querySelector("#hmLibToggle");
 
-let libVisible = true;
+let libVisible = false;
+// Start hidden on page load
+libEl.classList.add("hm-hidden");
+libToggleBtn.textContent = "SHOW";
+
   libToggleBtn.addEventListener("click", () => {
     libVisible = !libVisible;
     libEl.classList.toggle("hm-hidden", !libVisible);
@@ -502,6 +499,16 @@ let libVisible = true;
 
   qEl.addEventListener("input", () => autoSizeTextarea(qEl));
   autoSizeTextarea(qEl);
+
+  mapGenBtn.addEventListener("click", generateFutureMap);
+  mapPngBtn.addEventListener("click", downloadFutureMapPng);
+
+  mapThemeEl.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      mapGenBtn.click();
+    }
+  });
 
 
 
@@ -792,74 +799,177 @@ let libVisible = true;
 
   setStatus(sessionToken ? "SESSION READY" : "READY (UPLOAD PDFS)");
   refreshLibrary();
-})();
 
-// future map
 
-  function wrapLines(str, maxChars){
-    const words = String(str || "").split(/\s+/).filter(Boolean);
+   // =========================
+  // FUTURE MAP (SVG layout)
+  // =========================
+
+  function polygonPoints(sides, cx, cy, r, rotationDeg){
+    const pts = [];
+    const rot = (rotationDeg || -90) * Math.PI / 180; // start at top
+    for (let i=0; i<sides; i++){
+      const a = rot + (i * 2*Math.PI / sides);
+      const x = cx + r * Math.cos(a);
+      const y = cy + r * Math.sin(a);
+      pts.push(`${x.toFixed(2)},${y.toFixed(2)}`);
+    }
+    return pts.join(" ");
+  }
+
+  function drawHeptagons(){
+  const g = mount.querySelector("#hmHeptagons");
+  if (!g) return;
+  g.innerHTML = "";
+
+  // Center of the canvas (your SVG is 1200 x 800)
+  const cx = 600;
+  const cy = 465; // slightly lower than center to match “title-heavy” top
+
+  // Smaller overall = more text space (tuned)
+  const radii = [165, 120, 82, 44]; // 4 layers like your reference
+
+  radii.forEach((r, idx) => {
+    const poly = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+    poly.setAttribute("points", polygonPoints(7, cx, cy, r, -90));
+    poly.setAttribute("fill", "rgba(255,255,255,0.30)");     // 30% white fill
+    poly.setAttribute("stroke", "rgba(255,255,255,0.35)");
+    poly.setAttribute("stroke-width", idx === 0 ? "2" : "1.5");
+    g.appendChild(poly);
+  });
+
+  // radial spokes (very subtle)
+  const spokes = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  spokes.setAttribute("stroke", "rgba(255,255,255,0.14)");
+  spokes.setAttribute("stroke-width", "1");
+
+  for (let i=0; i<7; i++){
+    const a = (-90 + i*(360/7)) * Math.PI / 180;
+    const x2 = cx + radii[0] * Math.cos(a);
+    const y2 = cy + radii[0] * Math.sin(a);
+
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line.setAttribute("x1", cx);
+    line.setAttribute("y1", cy);
+    line.setAttribute("x2", x2);
+    line.setAttribute("y2", y2);
+    spokes.appendChild(line);
+  }
+  g.appendChild(spokes);
+}
+
+  // Wrap + clamp so it cannot overflow
+  function wrapAndClampLines(str, maxCharsPerLine, maxLines){
+    const words = String(str || "").replace(/\s+/g, " ").trim().split(" ").filter(Boolean);
     const lines = [];
     let line = "";
+
     for (const w of words){
       const next = (line ? line + " " : "") + w;
-      if (next.length > maxChars){
+      if (next.length > maxCharsPerLine){
         if (line) lines.push(line);
         line = w;
+        if (lines.length >= maxLines) break;
       } else {
         line = next;
       }
     }
-    if (line) lines.push(line);
+    if (lines.length < maxLines && line) lines.push(line);
+
+    // Clamp with ellipsis if we ran out of room
+    if (lines.length === maxLines && words.length){
+      const joined = lines.join(" ");
+      // heuristic: if original is much longer, add …
+      if (joined.length < String(str || "").length - 8){
+        lines[maxLines - 1] = (lines[maxLines - 1].slice(0, Math.max(0, maxCharsPerLine - 1)) + "…").trim();
+      }
+    }
+
     return lines;
   }
 
-  function setLensText(id, bullets){
+  function setLensText(id, bullets, opts){
     const el = mount.querySelector("#" + id);
     if (!el) return;
-    // clear existing tspans
+
     while (el.firstChild) el.removeChild(el.firstChild);
 
-    const items = Array.isArray(bullets) ? bullets : [];
-    const maxBullets = 6;
+    const items = Array.isArray(bullets) ? bullets : []; 
+    const maxBullets = (opts && opts.maxBullets) || 3; 
+    const maxChars = (opts && opts.maxChars) || 34; 
+    const maxLinesTotal = (opts && opts.maxLinesTotal) || 10;
 
-    let y = 0;
+    let linesUsed = 0;
+
     for (const b of items.slice(0, maxBullets)){
-      const lines = wrapLines("• " + b, 34);
-      for (const ln of lines){
+      if (linesUsed >= maxLinesTotal) break;
+
+      const bullet = "• " + String(b || "").replace(/^•\s*/,"").trim();
+      const lines = wrapAndClampLines(bullet, maxChars, Math.max(1, maxLinesTotal - linesUsed));
+
+      for (let i=0; i<lines.length; i++){
         const t = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
         t.setAttribute("x", el.getAttribute("x"));
-        t.setAttribute("dy", y === 0 ? "0" : "18");
-        t.textContent = ln;
+        t.setAttribute("dy", (linesUsed === 0 && i === 0) ? "0" : "20");
+        t.textContent = lines[i];
         el.appendChild(t);
-        y++;
+        linesUsed++;
+        if (linesUsed >= maxLinesTotal) break;
       }
-      // small gap between bullets
-      const gap = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
-      gap.setAttribute("x", el.getAttribute("x"));
-      gap.setAttribute("dy", "8");
-      gap.textContent = "";
-      el.appendChild(gap);
-      y++;
+
+      // small gap between bullets (if room)
+      if (linesUsed < maxLinesTotal){
+        const gap = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
+        gap.setAttribute("x", el.getAttribute("x"));
+        gap.setAttribute("dy", "10");
+        gap.textContent = "";
+        el.appendChild(gap);
+        linesUsed++;
+      }
     }
   }
 
   function renderFutureMap(data){
-    const theme = String(data?.theme || "").trim();
-    mapThemeLabel.textContent = theme ? `THEME: ${theme}` : "";
+  const theme = String(data?.theme || "").trim();
+  mapThemeLabel.textContent = theme ? `THEME: ${theme}` : "";
 
-    const lenses = data?.lenses || {};
-    setLensText("lens_people_attitudes_behaviours", lenses.people_attitudes_behaviours);
-    setLensText("lens_politics_regulation", lenses.politics_regulation);
-    setLensText("lens_prosperity_economic_factors", lenses.prosperity_economic_factors);
-    setLensText("lens_planet_sustainability", lenses.planet_sustainability);
-    setLensText("lens_places_channels", lenses.places_channels);
-    setLensText("lens_potential_capability", lenses.potential_capability);
-    setLensText("lens_profit_models", lenses.profit_models);
+  const lenses = data?.lenses || {};
 
-    mapPngBtn.disabled = false;
-  }
+  // Top-center: shorter + centered
+  setLensText("lens_people_attitudes_behaviours", lenses.people_attitudes_behaviours, {
+    maxBullets: 3, maxChars: 60, maxLinesTotal: 5
+  });
+
+  // Left / right columns: clamp hard so they never run into footer
+  setLensText("lens_profit_models", lenses.profit_models, {
+    maxBullets: 3, maxChars: 55, maxLinesTotal: 9
+  });
+  setLensText("lens_politics_regulation", lenses.politics_regulation, {
+    maxBullets: 3, maxChars: 55, maxLinesTotal: 9
+  });
+
+  setLensText("lens_prosperity_economic_factors", lenses.prosperity_economic_factors, {
+    maxBullets: 3, maxChars: 55, maxLinesTotal: 9
+  });
+
+  // Bottom areas must be shorter
+  setLensText("lens_planet_sustainability", lenses.planet_sustainability, {
+    maxBullets: 3, maxChars: 55, maxLinesTotal: 7
+  });
+  setLensText("lens_places_channels", lenses.places_channels, {
+    maxBullets: 3, maxChars: 55, maxLinesTotal: 7
+  });
+
+  setLensText("lens_potential_capability", lenses.potential_capability, {
+    maxBullets: 3, maxChars: 55, maxLinesTotal: 9
+  });
+
+  mapPngBtn.disabled = false;
+}
+
 
   async function generateFutureMap(){
+    
     const theme = (mapThemeEl.value || "").trim();
     if (!theme) return addSys("ENTER A THEME FOR THE FUTURE MAP", true);
 
@@ -877,6 +987,7 @@ let libVisible = true;
       if (!resp.ok) throw new Error((data.error || "FUTURE MAP FAILED") + (data.details ? " — " + data.details : ""));
 
       renderFutureMap(data);
+        mapWrapEl.classList.remove("hm-hidden"); //show map once ready 
       addSys("FUTURE MAP READY ✅");
     } catch(e){
       addSys("FUTURE MAP ERROR: " + (e.message || e), true);
@@ -887,7 +998,6 @@ let libVisible = true;
 
   async function downloadFutureMapPng(){
     try{
-      // serialize svg
       const serializer = new XMLSerializer();
       const svgText = serializer.serializeToString(mapSvg);
 
@@ -904,21 +1014,19 @@ let libVisible = true;
       });
 
       const canvas = document.createElement("canvas");
-      canvas.width = 2400;   // 2x for sharpness
-      canvas.height = 1350;
-
+      canvas.width = 2400;   
+      canvas.height = 1600;  
       const ctx = canvas.getContext("2d");
-      // black background
+
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
       URL.revokeObjectURL(url);
 
-      const theme = (mapThemeEl.value || "future-map").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      const safeTheme = (mapThemeEl.value || "future-map").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-");
       const a = document.createElement("a");
-      a.download = `future-map-${theme}.png`;
+      a.download = `future-map-${safeTheme}.png`;
       a.href = canvas.toDataURL("image/png");
       document.body.appendChild(a);
       a.click();
@@ -928,15 +1036,16 @@ let libVisible = true;
     }
   }
 
-    mapGenBtn.addEventListener("click", generateFutureMap);
+  // init heptagons once
+  drawHeptagons();
+
+  // wire buttons (ensure these exist already in your IIFE)
+  mapGenBtn.addEventListener("click", generateFutureMap);
   mapPngBtn.addEventListener("click", downloadFutureMapPng);
 
-  mapThemeEl.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      mapGenBtn.click();
-    }
-  });
+
+
+})();
 
 
 </script>
