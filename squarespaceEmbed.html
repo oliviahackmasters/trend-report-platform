@@ -676,9 +676,12 @@ libToggleBtn.textContent = "SHOW";
     setStatus("UPLOADING…");
 
     const tags = {
-      year: (tagYearEl.value || "").trim(),
-      company: (tagCompanyEl.value || "").trim(),
-      topics: (tagTopicsEl.value || "").split(",").map(s => s.trim()).filter(Boolean)
+      year: (tagYearEl?.value || "").trim(),
+      company: (tagCompanyEl?.value || "").trim(),
+      topics: (tagTopicsEl?.value || "")
+        .split(",")
+        .map(s => s.trim())
+        .filter(Boolean)
     };
 
     try{
