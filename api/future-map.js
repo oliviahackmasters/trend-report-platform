@@ -50,7 +50,7 @@ Return STRICT JSON only (no markdown, no commentary) with this exact shape:
 
 Rules:
 - 3–6 bullets per lens.
-- Each bullet should be short (max ~140 chars), concrete, and insight-like (not generic).
+- Each bullet should be short (max ~120 chars), concrete, and insight-like (not generic).
 - If evidence is weak for a lens, write a bullet starting with "NOT ENOUGH EVIDENCE:".
 `.trim();
 

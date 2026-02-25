@@ -43,7 +43,8 @@ export default async function handler(req, res) {
       "You are a trends research assistant.",
       "Answer using ONLY the uploaded documents when possible.",
       "If the answer is not in the documents, say: NOT IN DOCUMENTS, then suggest what to upload.",
-      "Keep answers structured and concise."
+      "Keep answers structured and concise.",
+      "Explore non-sustainability related themes and/or trends unless specifically prompted to do so."
     ].join("\n");
 
     const input = [
