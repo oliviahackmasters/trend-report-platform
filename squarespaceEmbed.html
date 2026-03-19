@@ -1088,7 +1088,21 @@ libToggleBtn.textContent = "SHOW";
     const theme = (mapThemeEl.value || "").trim();
     if (!theme) return addSys("ENTER A THEME FOR THE FUTURE MAP", true);
 
-    addSys("GENERATING FUTURE MAP…");
+    setStatus("GENERATING FUTURE MAP…");
+    // Create loading message
+    let loadingMsg = document.createElement("div");
+    loadingMsg.className = "hm-msg hm-ai";
+    const title = document.createElement("div");
+    title.className = "hm-msg-title";
+    title.textContent = "TREND BOILER";
+    const body = document.createElement("div");
+    body.className = "hm-msg-body";
+    body.innerHTML = '<div class="loader-dual-ring"></div><p>GENERATING FUTURE MAP…</p>';
+    loadingMsg.appendChild(title);
+    loadingMsg.appendChild(body);
+    chatEl.appendChild(loadingMsg);
+    chatEl.scrollTop = chatEl.scrollHeight;
+
     mapGenBtn.disabled = true;
     mapPngBtn.disabled = true;
 
@@ -1103,9 +1117,12 @@ libToggleBtn.textContent = "SHOW";
 
       renderFutureMap(data);
         mapWrapEl.classList.remove("hm-hidden"); //show map once ready 
-      addSys("FUTURE MAP READY ✅");
+      // Update loading message with success
+      loadingMsg.querySelector('.hm-msg-body').innerHTML = formatMarkdownToHtml("FUTURE MAP READY ✅");
     } catch(e){
-      addSys("FUTURE MAP ERROR: " + (e.message || e), true);
+      // Update loading message with error
+      loadingMsg.querySelector('.hm-msg-body').innerHTML = escapeHtml("FUTURE MAP ERROR: " + (e.message || e));
+      setStatus("ERROR", true);
     } finally {
       mapGenBtn.disabled = false;
     }
