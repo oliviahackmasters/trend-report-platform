@@ -19,24 +19,19 @@ export default async function handler(req, res){
     const url = new URL(req.url, base);
     const sector = String(url.searchParams.get("sector") || "luxury").trim().toLowerCase();
 
+    const metas = await list({ prefix: "trend-library/meta/" });
     const items = [];
 
-    // List from sector-specific prefix (+ legacy root for luxury)
-    const prefixes = sector === "luxury" 
-      ? ["trend-library/meta/luxury/", "trend-library/meta/"]  // check migrated + legacy
-      : [`trend-library/meta/${sector}/`];  // only check sector folder
+    for (const b of metas.blobs || []) {
+      const r = await fetch(b.url);
+      const meta = await r.json().catch(()=>null);
+      if (!meta) continue;
 
-    for (const prefix of prefixes) {
-      const metas = await list({ prefix });
-      for (const b of metas.blobs || []) {
-        const r = await fetch(b.url);
-        const meta = await r.json().catch(()=>null);
-        if (!meta) continue;
-        
-        // De-duplicate by hash
-        if (!items.find(x => x.hash === meta.hash)) {
-          items.push(meta);
-        }
+      const itemSector = String(meta.sector || "").trim().toLowerCase();
+      if (sector === "luxury") {
+        if (!itemSector || itemSector === "luxury") items.push(meta);
+      } else if (itemSector === sector) {
+        items.push(meta);
       }
     }
 
