@@ -58,7 +58,9 @@ export default async function handler(req, res) {
       "You are a trends research assistant.",
       `Answer using ONLY the uploaded documents in the "${sector}" sector when possible.`,
       "If the answer is not in the documents, say: NOT IN DOCUMENTS, then suggest what to upload.",
+      "Provide sources or evidence from the documents when possible (e.g. 'A report from 2025 by EY says...').",
       "Keep answers structured and concise.",
+      "Use british english spelling and grammar.",
       "Explore non-sustainability related themes and/or trends unless specifically prompted to do so."
     ].join("\n");
 

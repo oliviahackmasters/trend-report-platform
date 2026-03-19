@@ -344,6 +344,30 @@
     border: 1px solid rgba(209,128,87,0.45);
     background: #000;
   }
+  
+/* --- 8. Dual Ring --- */
+/* https://codepen.io/Kathleen-Garrity/pen/OPRPzNO  */
+.loader-dual-ring {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  border-top-color: var(--l-color);
+  border-bottom-color: var(--l-color);
+  animation: spin 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+  position: relative;
+}
+.loader-dual-ring::after {
+  content: '';
+  position: absolute;
+  top: 4px; left: 4px; right: 4px; bottom: 4px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  border-left-color: rgba(244, 244, 244, 0.4);
+  border-right-color: rgba(244, 244, 244, 0.4);
+  animation: spin-reverse 1s linear infinite;
+}
+
 
 
 </style>
@@ -799,7 +823,19 @@ libToggleBtn.textContent = "SHOW";
 
     addMsg("me", q);
     setStatus("THINKING…");
-    addMsg("ai", "THINKING…");
+    // Create loading message
+    let loadingMsg = document.createElement("div");
+    loadingMsg.className = "hm-msg hm-ai";
+    const title = document.createElement("div");
+    title.className = "hm-msg-title";
+    title.textContent = "TREND BOILER";
+    const body = document.createElement("div");
+    body.className = "hm-msg-body";
+    body.innerHTML = '<div class="loader-dual-ring"></div>';
+    loadingMsg.appendChild(title);
+    loadingMsg.appendChild(body);
+    chatEl.appendChild(loadingMsg);
+    chatEl.scrollTop = chatEl.scrollHeight;
 
     askBtn.disabled = true;
     uploadBtn.disabled = true;
@@ -813,7 +849,8 @@ libToggleBtn.textContent = "SHOW";
       const data = await resp.json().catch(()=>({}));
       if (!resp.ok) throw new Error((data.error || "REQUEST FAILED") + (data.details ? " — " + data.details : ""));
 
-      addMsg("ai", data.answer || "");
+      // Update loading message with answer
+      loadingMsg.querySelector('.hm-msg-body').innerHTML = formatMarkdownToHtml(data.answer || "");
       history = [...history,
         { role:"user", content: q },
         { role:"assistant", content: data.answer || "" }
@@ -822,7 +859,9 @@ libToggleBtn.textContent = "SHOW";
       setStatus("DONE");
       addMsg("ai", "DONE.");
     } catch(e){
-      addSys("ERROR: " + (e.message || e), true);
+      // Update loading message with error
+      loadingMsg.querySelector('.hm-msg-body').innerHTML = escapeHtml("ERROR: " + (e.message || e));
+      setStatus("ERROR", true);
     } finally {
       askBtn.disabled = false;
       uploadBtn.disabled = false;
