@@ -5,7 +5,7 @@ import crypto from "crypto";
 import { put, list } from "@vercel/blob";
 
 import { openai } from "../lib/openaiClient.js";
-import { getVectorStores } from "../lib/vs.js";
+import { getVectorStores, getVectorStoreIdForSector } from "../lib/vs.js";
 import { setCors, handleOptions, requireDemoToken } from "../lib/cors.js";
 
 function json(res, status, payload) {
@@ -163,8 +163,9 @@ export default async function handler(req, res) {
 
   if (!blobUrl) return json(res, 400, { error: "Missing blobUrl" });
 
-  const vsid = process.env.BASE_VECTOR_STORE_ID;
-  if (!vsid) return json(res, 500, { error: "Missing BASE_VECTOR_STORE_ID" });
+  const sector = String(body.sector || "luxury").trim().toLowerCase();
+  const vsid = getVectorStoreIdForSector(sector);
+  if (!vsid) return json(res, 500, { error: `Missing vector store ID for sector: ${sector}` });
 
   try {
     // Download blob
@@ -176,12 +177,16 @@ export default async function handler(req, res) {
     // Hash for duplicates (exact byte match)
     const hash = crypto.createHash("sha256").update(buf).digest("hex");
 
-    // If metadata exists, treat as duplicate and stop
-    const metaKey = `trend-library/meta/${hash}.json`;
-    const existing = await list({ prefix: metaKey });
+    // If metadata exists for this sector (or legacy luxury root), treat as duplicate and stop
+    const sectorMetaKey = `trend-library/meta/${sector}/${hash}.json`;
+    const legacyMetaKey = `trend-library/meta/${hash}.json`;
+    const checkKeys = sector === "luxury" ? [legacyMetaKey, sectorMetaKey] : [sectorMetaKey];
 
-    if ((existing.blobs || []).length) {
-      return json(res, 200, { ok: true, duplicate: true, hash });
+    for (const key of checkKeys) {
+      const existing = await list({ prefix: key });
+      if ((existing.blobs || []).length) {
+        return json(res, 200, { ok: true, duplicate: true, hash });
+      }
     }
 
     // Write temp file for OpenAI upload
@@ -232,8 +237,10 @@ export default async function handler(req, res) {
     const addedAt = new Date().toISOString();
 
     // Persist metadata as a blob JSON (same as you already do)
+    const metaKey = sectorMetaKey;
     const meta = {
       hash,
+      sector,
       filename,
       pathname,
       blobUrl,

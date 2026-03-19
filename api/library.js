@@ -15,13 +15,24 @@ export default async function handler(req, res){
   if (req.method !== "GET") return json(res, 405, { error: "Use GET." });
 
   try{
+    const base = req.headers.host ? `http://${req.headers.host}` : "http://localhost";
+    const url = new URL(req.url, base);
+    const sector = String(url.searchParams.get("sector") || "luxury").trim().toLowerCase();
+
     const metas = await list({ prefix: "trend-library/meta/" });
     const items = [];
 
     for (const b of metas.blobs || []) {
       const r = await fetch(b.url);
       const meta = await r.json().catch(()=>null);
-      if (meta) items.push(meta);
+      if (!meta) continue;
+
+      const itemSector = String(meta.sector || "").trim().toLowerCase();
+      if (sector === "luxury") {
+        if (!itemSector || itemSector === "luxury") items.push(meta);
+      } else if (itemSector === sector) {
+        items.push(meta);
+      }
     }
 
     items.sort((a,b) => String(b.addedAt||"").localeCompare(String(a.addedAt||"")));

@@ -1,6 +1,6 @@
 import { del, list } from "@vercel/blob";
 import { openai } from "../lib/openaiClient.js";
-import { getVectorStores } from "../lib/vs.js";
+import { getVectorStores, getVectorStoreIdForSector } from "../lib/vs.js";
 import { setCors, handleOptions, requireDemoToken } from "../lib/cors.js";
 
 function json(res, status, payload){
@@ -21,17 +21,37 @@ export default async function handler(req, res){
     const hash = String(body.hash || "").trim();
     if (!hash) return json(res, 400, { error: "Missing hash" });
 
-    // Find meta blob
-    const metaPrefix = `trend-library/meta/${hash}.json`;
-    const metas = await list({ prefix: metaPrefix });
-    const metaBlob = (metas.blobs || [])[0];
+    const sectorFromBody = String(body.sector || "").trim().toLowerCase();
+    const sector = sectorFromBody || "luxury";
+
+    // Find meta blob (support legacy root location and per-sector folders)
+    const candidates = [];
+    if (sector === "luxury") {
+      candidates.push(`trend-library/meta/${hash}.json`);
+    }
+    candidates.push(`trend-library/meta/${sector}/${hash}.json`);
+
+    let metaBlob = null;
+    for (const prefix of candidates) {
+      const metas = await list({ prefix });
+      metaBlob = (metas.blobs || [])[0];
+      if (metaBlob) break;
+    }
+
+    if (!metaBlob) {
+      // Fallback: scan all meta entries for matching hash
+      const all = await list({ prefix: "trend-library/meta/" });
+      metaBlob = (all.blobs || []).find(b => String(b.url || "").endsWith(`/${hash}.json`));
+    }
+
     if (!metaBlob) return json(res, 404, { error: "Not found" });
 
     const metaResp = await fetch(metaBlob.url);
     const meta = await metaResp.json();
 
-    const vsid = process.env.BASE_VECTOR_STORE_ID;
-    if (!vsid) return json(res, 500, { error: "Missing BASE_VECTOR_STORE_ID" });
+    const metaSector = String(meta.sector || "").trim().toLowerCase() || sector;
+    const vsid = getVectorStoreIdForSector(metaSector);
+    if (!vsid) return json(res, 500, { error: `Missing vector store ID for sector: ${metaSector}` });
 
     const vectorStores = getVectorStores(openai);
 

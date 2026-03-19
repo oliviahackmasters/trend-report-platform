@@ -1,5 +1,6 @@
 import { openai } from "../lib/openaiClient.js";
 import { setCors, handleOptions, requireDemoToken } from "../lib/cors.js";
+import { getVectorStoreIdForSector } from "../lib/vs.js";
 
 function json(res, status, payload) {
   res.statusCode = status;
@@ -19,12 +20,13 @@ export default async function handler(req, res) {
       return json(res, 405, { error: "Use POST." });
     }
 
-    const vsid = process.env.BASE_VECTOR_STORE_ID;
+    const body = typeof req.body === "string" ? JSON.parse(req.body) : (req.body || {});
+    const sector = String(body.sector || "luxury").trim().toLowerCase();
+    const vsid = getVectorStoreIdForSector(sector);
     if (!vsid) {
-      return json(res, 500, { error: "Missing BASE_VECTOR_STORE_ID" });
+      return json(res, 500, { error: `Missing vector store ID for sector: ${sector}` });
     }
 
-    const body = typeof req.body === "string" ? JSON.parse(req.body) : (req.body || {});
     const question = String(body.question || "").trim();
     const history = Array.isArray(body.history) ? body.history : [];
 
@@ -36,7 +38,7 @@ export default async function handler(req, res) {
 
     const system = [
       "You are a trends research assistant.",
-      "Answer using ONLY the uploaded documents when possible.",
+      `Answer using ONLY the uploaded documents in the "${sector}" sector when possible.`,
       "If the answer is not in the documents, say: NOT IN DOCUMENTS, then suggest what to upload.",
       "Keep answers structured and concise.",
       "Explore non-sustainability related themes and/or trends unless specifically prompted to do so."

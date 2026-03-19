@@ -1,5 +1,6 @@
 import { openai } from "../lib/openaiClient.js";
 import { setCors, handleOptions, requireDemoToken } from "../lib/cors.js";
+import { getVectorStoreIdForSector } from "../lib/vs.js";
 
 function json(res, status, payload) {
   res.statusCode = status;
@@ -16,11 +17,12 @@ export default async function handler(req, res) {
 
   if (req.method !== "POST") return json(res, 405, { error: "Use POST." });
 
-  const vsid = process.env.BASE_VECTOR_STORE_ID;
-  if (!vsid) return json(res, 500, { error: "Missing BASE_VECTOR_STORE_ID" });
-
   try {
     const body = typeof req.body === "string" ? JSON.parse(req.body) : (req.body || {});
+    const sector = String(body.sector || "luxury").trim().toLowerCase();
+    const vsid = getVectorStoreIdForSector(sector);
+    if (!vsid) return json(res, 500, { error: `Missing vector store ID for sector: ${sector}` });
+
     const theme = String(body.theme || "").trim();
 
     if (!theme) return json(res, 400, { error: "Missing theme" });

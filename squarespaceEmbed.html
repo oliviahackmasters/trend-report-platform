@@ -280,6 +280,20 @@
   font-size: 11px;
 }
 
+#hmTrendChat .hm-sectorTabs{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+#hmTrendChat .hm-sectorBtn{
+  padding: 8px 10px;
+  font-size: 11px;
+}
+#hmTrendChat .hm-sectorBtn.is-active{
+  background: var(--hm-copper);
+  color: var(--hm-black);
+}
+
 #hmTrendChat .hm-hidden{ display:none !important; }
 
   /* Future Map */
@@ -354,6 +368,10 @@
       <div class="hm-row">
         <button class="hm-btn" id="hmNewSession">NEW SESSION</button>
         <div class="hm-status" id="hmStatus">READY</div>
+      </div>
+
+      <div class="hm-row" id="hmSectorRow">
+        <div class="hm-sectorTabs" id="hmSectorTabs"></div>
       </div>
 
       <div class="hm-divider"></div>
@@ -455,6 +473,46 @@
   const qEl = mount.querySelector("#hmQ");
   const chatEl = mount.querySelector("#hmChat");
   const newBtn = mount.querySelector("#hmNewSession");
+  const sectorTabsEl = mount.querySelector("#hmSectorTabs");
+
+  const SECTORS = [
+    { id: "luxury", label: "Luxury" },
+    { id: "banking", label: "Banking" }
+  ];
+
+  const LS_SECTOR_KEY = "hm_trendchat_sector";
+  let currentSector = localStorage.getItem(LS_SECTOR_KEY) || "luxury";
+
+  function setSector(sector) {
+    if (!sector) return;
+    sector = String(sector || "").trim().toLowerCase();
+    currentSector = sector;
+    localStorage.setItem(LS_SECTOR_KEY, currentSector);
+
+    sectorTabsEl?.querySelectorAll("[data-sector]").forEach(btn => {
+      btn.classList.toggle("is-active", btn.getAttribute("data-sector") === currentSector);
+    });
+
+    // Reset conversation when switching context
+    history = [];
+    chatEl.innerHTML = "";
+    addSys(`SWITCHED TO ${sector.toUpperCase()} SECTOR`);
+
+    refreshLibrary();
+  }
+
+  function renderSectorTabs() {
+    if (!sectorTabsEl) return;
+    sectorTabsEl.innerHTML = SECTORS.map(s =>
+      `<button type="button" class="hm-btn hm-sectorBtn" data-sector="${s.id}">${s.label}</button>`
+    ).join("");
+    sectorTabsEl.querySelectorAll("[data-sector]").forEach(btn => {
+      btn.addEventListener("click", () => setSector(btn.getAttribute("data-sector")));
+    });
+    setSector(currentSector);
+  }
+
+  renderSectorTabs();
 
   const libEl = mount.querySelector("#hmLibrary");
   const tagYearEl = mount.querySelector("#hmTagYear");
@@ -619,7 +677,7 @@ libToggleBtn.textContent = "SHOW";
 
     libEl.innerHTML = `
       <div class="hm-lib">
-        <div class="hm-lib-title">LIBRARY (${(items||[]).length})</div>
+        <div class="hm-lib-title">LIBRARY (${currentSector.toUpperCase()}) (${(items||[]).length})</div>
         ${rows || `<div class="hm-lib-meta">NO REPORTS SAVED YET.</div>`}
       </div>
     `;
@@ -636,7 +694,7 @@ libToggleBtn.textContent = "SHOW";
           const resp = await fetch(API_BASE + "/api/delete", {
             method: "POST",
             headers: headersJson(),
-            body: JSON.stringify({ hash })
+            body: JSON.stringify({ sector: currentSector, hash })
           });
           const data = await resp.json().catch(()=>({}));
           if (!resp.ok) throw new Error((data.error || "DELETE FAILED") + (data.details ? " — " + data.details : ""));
@@ -653,7 +711,7 @@ libToggleBtn.textContent = "SHOW";
 
   async function refreshLibrary(){
     try{
-      const resp = await fetch(API_BASE + "/api/library", {
+      const resp = await fetch(API_BASE + "/api/library?sector=" + encodeURIComponent(currentSector), {
         method: "GET",
         headers: headersJson()
       });
@@ -702,6 +760,7 @@ libToggleBtn.textContent = "SHOW";
           method: "POST",
           headers: headersJson(),
           body: JSON.stringify({
+            sector: currentSector,
             blobUrl: blob.url,
             pathname: blob.pathname,
             filename: file.name,
@@ -749,7 +808,7 @@ libToggleBtn.textContent = "SHOW";
       const resp = await fetch(API_BASE + "/api/ask", {
         method:"POST",
         headers: headersJson(),
-        body: JSON.stringify({ question: q, history })
+        body: JSON.stringify({ sector: currentSector, question: q, history })
       });
       const data = await resp.json().catch(()=>({}));
       if (!resp.ok) throw new Error((data.error || "REQUEST FAILED") + (data.details ? " — " + data.details : ""));
@@ -800,7 +859,7 @@ libToggleBtn.textContent = "SHOW";
     addSys("NEW SESSION READY (UPLOAD PDFS)");
   });
 
-  setStatus(sessionToken ? "SESSION READY" : "READY (UPLOAD PDFS)");
+  setStatus(sessionToken ? `SESSION READY (${currentSector})` : `READY (${currentSector.toUpperCase()} UPLOAD PDFS)`);
   refreshLibrary();
 
 
@@ -984,7 +1043,7 @@ libToggleBtn.textContent = "SHOW";
       const resp = await fetch(API_BASE + "/api/future-map", {
         method: "POST",
         headers: headersJson(),
-        body: JSON.stringify({ theme })
+        body: JSON.stringify({ sector: currentSector, theme })
       });
       const data = await resp.json().catch(()=>({}));
       if (!resp.ok) throw new Error((data.error || "FUTURE MAP FAILED") + (data.details ? " — " + data.details : ""));
