@@ -512,8 +512,6 @@
     setSector(currentSector);
   }
 
-  renderSectorTabs();
-
   const libEl = mount.querySelector("#hmLibrary");
   const tagYearEl = mount.querySelector("#hmTagYear");
   const tagCompanyEl = mount.querySelector("#hmTagCompany");
@@ -531,6 +529,8 @@
   const LS_KEY = "hm_trendchat_sessionToken";
   let sessionToken = localStorage.getItem(LS_KEY) || "";
   let history = [];
+
+  renderSectorTabs();
 
   function setStatus(text, isError=false){
     statusEl.textContent = text || "";

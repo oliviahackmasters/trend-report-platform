@@ -9,6 +9,12 @@ import { list, put, del } from "@vercel/blob";
 // or on Windows (PowerShell):
 //   $env:BLOB_READ_WRITE_TOKEN="..."; node scripts/migrateToLuxury.mjs
 
+if (!process.env.BLOB_READ_WRITE_TOKEN) {
+  console.error("ERROR: BLOB_READ_WRITE_TOKEN environment variable is required.");
+  console.error("Create a write token in Vercel and set it before running this script.");
+  process.exit(1);
+}
+
 function isLegacyMetaKey(key) {
   return /^trend-library\/meta\/[0-9a-f]{64}\.json$/i.test(key);
 }
