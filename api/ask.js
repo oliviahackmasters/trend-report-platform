@@ -1,6 +1,5 @@
 import { openai } from "../lib/openaiClient.js";
 import { setCors, handleOptions, requireDemoToken } from "../lib/cors.js";
-import { readSessionToken, isExpired } from "../lib/sessionToken.js";
 
 function json(res, status, payload) {
   res.statusCode = status;
@@ -8,11 +7,7 @@ function json(res, status, payload) {
   res.end(JSON.stringify(payload));
 }
 
-async function safeDeleteVectorStore(vectorStoreId) {
-  try { await openai.vector_stores.del(vectorStoreId); } catch {}
-}
-
-export const config = { maxDuration: 60 }; // prevents Vercel timing out on bigger libraries
+export const config = { maxDuration: 60 };
 
 export default async function handler(req, res) {
   setCors(req, res);
@@ -20,22 +15,22 @@ export default async function handler(req, res) {
   if (!requireDemoToken(req, res)) return;
 
   try {
-    if (req.method !== "POST") return json(res, 405, { error: "Use POST." });
+    if (req.method !== "POST") {
+      return json(res, 405, { error: "Use POST." });
+    }
 
-    const token = req.headers["x-session-token"];
-    const session = readSessionToken(token);
-    if (!session?.vsid) return json(res, 400, { error: "Missing/invalid session token." });
-
-    if (isExpired(session.createdAt)) {
-      await safeDeleteVectorStore(session.vsid);
-      return json(res, 410, { error: "Session expired. Please start a new session." });
+    const vsid = process.env.BASE_VECTOR_STORE_ID;
+    if (!vsid) {
+      return json(res, 500, { error: "Missing BASE_VECTOR_STORE_ID" });
     }
 
     const body = typeof req.body === "string" ? JSON.parse(req.body) : (req.body || {});
     const question = String(body.question || "").trim();
     const history = Array.isArray(body.history) ? body.history : [];
 
-    if (!question) return json(res, 400, { error: "Missing question." });
+    if (!question) {
+      return json(res, 400, { error: "Missing question." });
+    }
 
     const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
 
@@ -56,13 +51,12 @@ export default async function handler(req, res) {
     const resp = await openai.responses.create({
       model,
       input,
-      tools: [{ type: "file_search", vector_store_ids: [session.vsid] }],
+      tools: [{ type: "file_search", vector_store_ids: [vsid] }],
       max_output_tokens: 1500
     });
 
     return json(res, 200, { answer: resp.output_text || "" });
   } catch (err) {
-    // IMPORTANT: CORS headers were set before this point.
     return json(res, 500, { error: "ASK FAILED", details: String(err?.message || err) });
   }
 }
