@@ -1,3 +1,4 @@
+import { list } from "@vercel/blob";
 import { openai } from "../lib/openaiClient.js";
 import { setCors, handleOptions, requireDemoToken } from "../lib/cors.js";
 import { getVectorStoreIdForSector } from "../lib/vs.js";
@@ -34,6 +35,23 @@ export default async function handler(req, res) {
       return json(res, 400, { error: "Missing question." });
     }
 
+    // Log for debugging + confirm sector + corpus size
+    let docCount = 0;
+    try {
+      const prefixes = sector === "luxury"
+        ? ["trend-library/meta/luxury/", "trend-library/meta/"]
+        : [`trend-library/meta/${sector}/`];
+
+      for (const prefix of prefixes) {
+        const metas = await list({ prefix });
+        docCount += (metas.blobs || []).length;
+      }
+    } catch (e) {
+      // best-effort logging; ignore failures
+    }
+
+    console.log(`ASK sector=${sector} vsid=${vsid} docs=${docCount} question=${question.slice(0,200)}`);
+
     const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
 
     const system = [
@@ -56,6 +74,8 @@ export default async function handler(req, res) {
       tools: [{ type: "file_search", vector_store_ids: [vsid] }],
       max_output_tokens: 1500
     });
+
+    console.log(`ASK RESULT sector=${sector} vsid=${vsid} answerTokens=${(resp?.output_tokens || 0)}`);
 
     return json(res, 200, { answer: resp.output_text || "" });
   } catch (err) {
