@@ -20,6 +20,109 @@ function guessYear(filename) {
 }
 
 /**
+ * Normalize company names to canonical forms
+ * Handles variations like "DELOITTE", "Deloite", "DI" → "Deloitte"
+ */
+function normalizeCompanyName(company) {
+  if (!company) return "";
+  
+  const input = String(company || "").trim();
+  if (!input) return "";
+
+  // Mapping of known variations to canonical names
+  const companyMap = {
+    // Deloitte
+    deloitte: "Deloitte",
+    deloite: "Deloitte",
+    dltt: "Deloitte",
+    di: "Deloitte",
+
+    // McKinsey
+    mckinsey: "McKinsey & Company",
+    mckinsey_company: "McKinsey & Company",
+    mckinsey_co: "McKinsey & Company",
+    mcg: "McKinsey & Company",
+
+    // Boston Consulting Group
+    bcg: "Boston Consulting Group",
+    boston_consulting: "Boston Consulting Group",
+
+    // Bain
+    bain: "Bain & Company",
+    bain_company: "Bain & Company",
+
+    // PwC
+    pwc: "PwC",
+    pricewaterhousecoopers: "PwC",
+    pricewaterhouse: "PwC",
+    pwcc: "PwC",
+
+    // KPMG
+    kpmg: "KPMG",
+    kpmgllp: "KPMG",
+
+    // EY
+    ey: "EY",
+    ernst_young: "EY",
+    ernst_and_young: "EY",
+
+    // OC&C
+    occ: "OC&C Strategy Consultants",
+    occ_strategy: "OC&C Strategy Consultants",
+
+    // L.E.K.
+    lek: "L.E.K. Consulting",
+    lek_consulting: "L.E.K. Consulting",
+
+    // Accenture
+    accenture: "Accenture",
+
+    // Oliver Wyman
+    oliver_wyman: "Oliver Wyman",
+    oliverwyman: "Oliver Wyman",
+
+    // Capgemini
+    capgemini: "Capgemini",
+
+    // Gartner
+    gartner: "Gartner",
+
+    // Forrester
+    forrester: "Forrester",
+
+    // IDC
+    idc: "IDC",
+
+    // Economist Intelligence Unit
+    eiu: "The Economist Intelligence Unit",
+    economist_intelligence: "The Economist Intelligence Unit",
+    economist_unit: "The Economist Intelligence Unit",
+  };
+
+  // Normalize input: lowercase, replace spaces/hyphens with underscores
+  const normalized = input
+    .toLowerCase()
+    .replace(/[&.,\-\s]+/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_|_$/g, "");
+
+  // Direct lookup
+  if (companyMap[normalized]) {
+    return companyMap[normalized];
+  }
+
+  // Fuzzy matching: check if key is substring of normalized
+  for (const [key, canonical] of Object.entries(companyMap)) {
+    if (normalized.includes(key) || key.includes(normalized)) {
+      return canonical;
+    }
+  }
+
+  // If no match, return original in title case
+  return input.split(/[\s\-&]+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+}
+
+/**
  * Heuristic "company/source" guess:
  * - If filename starts with something like "EIU_" or "McKinsey-" etc, use that token
  * - Otherwise blank
@@ -27,7 +130,10 @@ function guessYear(filename) {
 function guessCompanyFromFilename(filename) {
   const base = String(filename || "").replace(/\.[^.]+$/, "");
   const token = base.split(/[_-]/)[0]?.trim() || "";
-  if (/^[A-Za-z]{2,20}$/.test(token)) return token.toUpperCase();
+  if (/^[A-Za-z]{2,20}$/.test(token)) {
+    const rawCompany = token.toUpperCase();
+    return normalizeCompanyName(rawCompany); // Apply normalization
+  }
   return "";
 }
 
@@ -117,7 +223,7 @@ topics=${(topics || []).join(", ")}
 
     // normalize
     out.year = out.year.match(/\b(19\d{2}|20\d{2})\b/) ? out.year : "";
-    out.company = out.company.trim().slice(0, 60);
+    out.company = normalizeCompanyName(out.company); // Apply company normalization
     out.topics = Array.from(new Set(out.topics.map(t => t.trim()).filter(Boolean))).slice(0, 12);
 
     return out;
@@ -131,8 +237,11 @@ function mergeTags({ base, refined, manual }) {
   const year =
     String(manual?.year || refined?.year || base?.year || "").trim().slice(0, 4);
 
-  const company =
+  const rawCompany =
     String(manual?.company || refined?.company || base?.company || "").trim().slice(0, 60);
+  
+  // Normalize company name to canonical form
+  const company = normalizeCompanyName(rawCompany);
 
   const topicsManual = Array.isArray(manual?.topics) ? manual.topics : [];
   const topicsRefined = Array.isArray(refined?.topics) ? refined.topics : [];
