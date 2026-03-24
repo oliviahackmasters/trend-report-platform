@@ -84,6 +84,8 @@
     line-height: 1;
     border-radius: 0;
     transition: background 120ms linear, color 120ms linear;
+    height: 44px;
+    box-sizing: border-box;
   }
   #hmTrendChat .hm-btn:hover{
     background: var(--hm-copper);
@@ -386,6 +388,7 @@
 
 </style>
 
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 <script>
 (() => {
   // CONFIG
@@ -500,6 +503,7 @@
       <div class="hm-inputRow">
         <textarea class="hm-input hm-textarea" id="hmQ" rows="1" placeholder="ASK ABOUT TRENDS, INSIGHTS, OR A SPECIFIC REPORT…"></textarea>
         <button class="hm-btn" id="hmAsk">SEND</button>
+        <button class="hm-btn" id="hmDownloadChatPng">EXPORT CHAT</button>
       </div>
     </div>
   `;
@@ -512,6 +516,7 @@
   const chatEl = mount.querySelector("#hmChat");
   const newBtn = mount.querySelector("#hmNewSession");
   const sectorTabsEl = mount.querySelector("#hmSectorTabs");
+  const downloadChatPngBtn = mount.querySelector("#hmDownloadChatPng");
 
   const SECTORS = [
     { id: "luxury", label: "Luxury" },
@@ -1168,12 +1173,34 @@ libToggleBtn.textContent = "SHOW";
     }
   }
 
+  async function downloadChatPng(){
+    try{
+      const canvas = await html2canvas(chatEl, {
+        backgroundColor: '#000000',
+        scale: 2,
+        useCORS: true,
+        allowTaint: true
+      });
+
+      const a = document.createElement("a");
+      a.download = `chatlog-${new Date().toISOString().slice(0,10)}.png`;
+      a.href = canvas.toDataURL("image/png");
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (e) {
+      addSys("CHAT PNG DOWNLOAD FAILED: " + (e.message || e), true);
+    }
+  }
+
   // init heptagons once
   drawHeptagons();
 
   // wire buttons (ensure these exist already in your IIFE)
   mapGenBtn.addEventListener("click", generateFutureMap);
   mapPngBtn.addEventListener("click", downloadFutureMapPng);
+
+  downloadChatPngBtn.addEventListener("click", downloadChatPng);
 
 
 
