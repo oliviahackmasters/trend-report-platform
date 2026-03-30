@@ -347,44 +347,39 @@
     background: #000;
   }
   
-/* --- 8. Dual Ring --- */
-/* https://codepen.io/Kathleen-Garrity/pen/OPRPzNO  */
-.loader-dual-ring {
-  width: 36px;
-  height: 36px;
+.loader-radar {
+  width: 84px;
+  height: 84px;
+  margin: 8px auto 10px auto;
   border-radius: 50%;
-  border: 3px solid transparent;
-  border-top-color: var(--hm-copper);
-  border-bottom-color: var(--hm-copper);
-  animation: spin 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
   position: relative;
-}
-.loader-dual-ring::after {
-  content: '';
-  position: absolute;
-  top: 4px; left: 4px; right: 4px; bottom: 4px;
-  border-radius: 50%;
-  border: 3px solid transparent;
-  border-left-color: rgba(244, 244, 244, 0.4);
-  border-right-color: rgba(244, 244, 244, 0.4);
-  animation: spin-reverse 1s linear infinite;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(209,128,87,0.24), transparent 60%),
+    radial-gradient(circle at 50% 50%, rgba(255,255,255,0.06) 2px, transparent 2px),
+    radial-gradient(circle at 50% 50%, rgba(255,255,255,0.06) 4px, transparent 4px);
+  box-shadow:
+    inset 0 0 0 2px rgba(209,128,87,0.65),
+    0 0 20px rgba(209,128,87,0.08);
 }
 
-
-/* --- 9. Ripple --- */
-.loader-ripple {
-  position: relative;
-  width: 50px;
-  height: 50px;
-}
-.loader-ripple div {
+.loader-radar::after {
+  content: "";
   position: absolute;
-  border: 2px solid var(--l-color);
-  opacity: 1;
-  border-radius: 50%;
-  animation: ripple 1.5s infinite cubic-bezier(0, 0.2, 0.8, 1);
+  inset: -10%;
+  background: conic-gradient(
+    from 0deg,
+    rgba(209,128,87,0),
+    rgba(209,128,87,0.45)
+  );
+  animation: hmRadarSweep 2s linear infinite;
 }
-.loader-ripple div:nth-child(2) { animation-delay: -0.75s; }
+
+@keyframes hmRadarSweep {
+  to {
+    transform: rotate(360deg);
+  }
+}
 
 </style>
 
@@ -503,7 +498,7 @@
       <div class="hm-inputRow">
         <textarea class="hm-input hm-textarea" id="hmQ" rows="1" placeholder="ASK ABOUT TRENDS, INSIGHTS, OR A SPECIFIC REPORT…"></textarea>
         <button class="hm-btn" id="hmAsk">SEND</button>
-        <button class="hm-btn" id="hmDownloadChatPng">EXPORT CHAT</button>
+        <button class="hm-btn" id="hmDownloadChatPng">EXPORT SUMMARY</button>
       </div>
     </div>
   `;
@@ -853,7 +848,7 @@ libToggleBtn.textContent = "SHOW";
     title.textContent = "TREND BOILER";
     const body = document.createElement("div");
     body.className = "hm-msg-body";
-    body.innerHTML = '<div class="loader-dual-ring"></div>';
+    body.innerHTML = '<div class="loader-radar"></div><p>THINKING…</p>';
     loadingMsg.appendChild(title);
     loadingMsg.appendChild(body);
     chatEl.appendChild(loadingMsg);
@@ -1105,8 +1100,7 @@ libToggleBtn.textContent = "SHOW";
     title.textContent = "TREND BOILER";
     const body = document.createElement("div");
     body.className = "hm-msg-body";
-    body.innerHTML = '<div class="loader-dual-ring"></div><p>GENERATING FUTURE MAP…</p>';
-    loadingMsg.appendChild(title);
+    body.innerHTML = '<div class="loader-radar"></div><p>GENERATING FUTURE MAP…</p>';
     loadingMsg.appendChild(body);
     chatEl.appendChild(loadingMsg);
     chatEl.scrollTop = chatEl.scrollHeight;
