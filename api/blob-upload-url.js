@@ -17,16 +17,16 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-export default async function handler(req, res) {
-  setCors(req, res);
-  if (handleOptions(req, res)) return;
-  if (!requireDemoToken(req, res)) return;
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
   try {
+    // Validate environment variables
+    if (!process.env.R2_ACCOUNT_ID || !process.env.R2_ACCESS_KEY_ID || !process.env.R2_SECRET_ACCESS_KEY || !process.env.R2_BUCKET_NAME) {
+      console.error("Missing R2 environment variables");
+      return res.status(500).json({
+        error: "Server configuration error",
+        details: "R2 environment variables not configured"
+      });
+    }
+
     const body = typeof req.body === "string" ? JSON.parse(req.body) : (req.body || {});
     const filename = safeFilename(body.pathname || body.filename || "report.pdf");
     const contentType = body.contentType || "application/pdf";
@@ -35,9 +35,9 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Only PDFs are allowed." });
     }
 
-    const key = `uploads/${crypto.randomUUID()}-${filename}`;
+    const key = `uploads/${crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex')}-${filename}`;
 
-    // For now, return the signed URL - CORS needs to be configured in Cloudflare dashboard
+    console.log("Generating upload URL for key:", key);
     const uploadUrl = await createUploadUrl({ key, contentType });
 
     return res.status(200).json({
@@ -48,6 +48,11 @@ export default async function handler(req, res) {
   } catch (e) {
     console.error("Upload URL generation failed:", e);
     return res.status(500).json({
+      error: "Failed to generate upload URL",
+      details: String(e?.message || e)
+    });
+  }
+}
       error: "Failed to generate upload URL",
       details: String(e?.message || e)
     });
