@@ -2,7 +2,7 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import crypto from "crypto";
-import { putJson, listObjects } from "../lib/r2.js";
+import { putJson, listObjects, publicUrlForKey } from "../lib/r2.js";
 
 import { openai } from "../lib/openaiClient.js";
 import { getVectorStores, getVectorStoreIdForSector } from "../lib/vs.js";
@@ -265,13 +265,16 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return json(res, 405, { error: "Use POST" });
 
   const body = typeof req.body === "string" ? JSON.parse(req.body) : (req.body || {});
-  const blobUrl = body.blobUrl;
+  const blobUrl = body.blobUrl || body.publicUrl || (body.key ? publicUrlForKey(body.key) : "");
   const filename = body.filename || "report.pdf";
   const pathname = body.pathname || "";
   const size = Number(body.size || 0);
   const tagsIn = body.tags || {};
 
-  if (!blobUrl) return json(res, 400, { error: "Missing blobUrl" });
+  if (!blobUrl) {
+    console.error("INGEST ERROR: missing blobUrl/publicUrl/key", { body });
+    return json(res, 400, { error: "Missing blobUrl", details: "Provide blobUrl, publicUrl, or key in request body." });
+  }
 
   const sector = String(body.sector || "luxury").trim().toLowerCase();
   const vsid = getVectorStoreIdForSector(sector);
