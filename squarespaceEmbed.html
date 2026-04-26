@@ -806,28 +806,6 @@ async function uploadFiles(){
 
       const uploadInfo = await tokenRes.json();
 
-await fetch(uploadInfo.uploadUrl, {
-  method: "PUT",
-  headers: {
-    "Content-Type": file.type || "application/pdf",
-  },
-  body: file,
-});
-
-await fetch(`${API_BASE}/api/ingest`, {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    "x-demo-token": DEMO_TOKEN,
-  },
-  body: JSON.stringify({
-    blobUrl: uploadInfo.url,
-    filename: file.name,
-    title: title,
-    sector: sector,
-  }),
-});
-
       if (!tokenRes.ok) {
         throw new Error(
           (uploadInfo.error || "UPLOAD URL FAILED") +
@@ -844,8 +822,6 @@ await fetch(`${API_BASE}/api/ingest`, {
         },
         body: file
       });
-
-      
 
       if (!putRes.ok) {
         const errText = await putRes.text().catch(() => "");
