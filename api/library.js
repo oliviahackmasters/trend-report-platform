@@ -1,33 +1,33 @@
-import { list } from "@vercel/blob";
+import { listObjects, getJson } from "../lib/r2.js";
 import { setCors, handleOptions, requireDemoToken } from "../lib/cors.js";
 
-function json(res, status, payload){
+function json(res, status, payload) {
   res.statusCode = status;
   res.setHeader("Content-Type", "application/json");
   res.end(JSON.stringify(payload));
 }
 
-export default async function handler(req, res){
+export default async function handler(req, res) {
   setCors(req, res);
   if (handleOptions(req, res)) return;
   if (!requireDemoToken(req, res)) return;
 
   if (req.method !== "GET") return json(res, 405, { error: "Use GET." });
 
-  try{
+  try {
     const base = req.headers.host ? `http://${req.headers.host}` : "http://localhost";
     const url = new URL(req.url, base);
     const sector = String(url.searchParams.get("sector") || "luxury").trim().toLowerCase();
 
-    const metas = await list({ prefix: "trend-library/meta/" });
+    const metas = await listObjects("trend-library/meta/");
     const items = [];
 
-    for (const b of metas.blobs || []) {
-      const r = await fetch(b.url);
-      const meta = await r.json().catch(()=>null);
+    for (const b of metas) {
+      const meta = await getJson(b.key).catch(() => null);
       if (!meta) continue;
 
       const itemSector = String(meta.sector || "").trim().toLowerCase();
+
       if (sector === "luxury") {
         if (!itemSector || itemSector === "luxury") items.push(meta);
       } else if (itemSector === sector) {
@@ -35,10 +35,13 @@ export default async function handler(req, res){
       }
     }
 
-    items.sort((a,b) => String(b.addedAt||"").localeCompare(String(a.addedAt||"")));
+    items.sort((a, b) => String(b.addedAt || "").localeCompare(String(a.addedAt || "")));
 
     return json(res, 200, { items });
-  } catch(e){
-    return json(res, 500, { error: "LIBRARY FAILED", details: String(e?.message || e) });
+  } catch (e) {
+    return json(res, 500, {
+      error: "LIBRARY FAILED",
+      details: String(e?.message || e)
+    });
   }
 }

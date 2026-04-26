@@ -1,4 +1,4 @@
-import { del, list } from "@vercel/blob";
+import { deleteObject, listObjects, getJson } from "../lib/r2.js";
 import { openai } from "../lib/openaiClient.js";
 import { getVectorStores, getVectorStoreIdForSector } from "../lib/vs.js";
 import { setCors, handleOptions, requireDemoToken } from "../lib/cors.js";
@@ -33,21 +33,20 @@ export default async function handler(req, res){
 
     let metaBlob = null;
     for (const prefix of candidates) {
-      const metas = await list({ prefix });
-      metaBlob = (metas.blobs || [])[0];
+      const metas = await listObjects(prefix);
+metaBlob = metas[0];
       if (metaBlob) break;
     }
 
     if (!metaBlob) {
       // Fallback: scan all meta entries for matching hash
-      const all = await list({ prefix: "trend-library/meta/" });
-      metaBlob = (all.blobs || []).find(b => String(b.url || "").endsWith(`/${hash}.json`));
+      const all = await listObjects("trend-library/meta/");
+metaBlob = all.find(b => String(b.key || "").endsWith(`/${hash}.json`));
     }
 
     if (!metaBlob) return json(res, 404, { error: "Not found" });
 
-    const metaResp = await fetch(metaBlob.url);
-    const meta = await metaResp.json();
+    const meta = await getJson(metaBlob.key);
 
     const metaSector = String(meta.sector || "").trim().toLowerCase() || sector;
     const vsid = getVectorStoreIdForSector(metaSector);
@@ -67,9 +66,9 @@ export default async function handler(req, res){
 
     // Delete PDF blob + meta blob
     if (meta.blobUrl) {
-      try { await del(meta.blobUrl); } catch {}
+      try { await deleteObject(meta.blobUrl); } catch {}
+await deleteObject(metaBlob.key);
     }
-    await del(metaBlob.url);
 
     return json(res, 200, { ok: true });
   } catch(e){

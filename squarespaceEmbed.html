@@ -766,73 +766,128 @@ libToggleBtn.textContent = "SHOW";
 
 
   
-  async function uploadFiles(){
-    const files = Array.from(fileEl.files || []);
-    if (!files.length) return addSys("CHOOSE PDFS FIRST", true);
+async function uploadFiles(){
+  const files = Array.from(fileEl.files || []);
+  if (!files.length) return addSys("CHOOSE PDFS FIRST", true);
 
-    await ensureSession();
+  await ensureSession();
 
-    uploadBtn.disabled = true;
-    askBtn.disabled = true;
-    setStatus("UPLOADING…");
+  uploadBtn.disabled = true;
+  askBtn.disabled = true;
+  setStatus("UPLOADING…");
 
-    const tags = {
-      year: (tagYearEl?.value || "").trim(),
-      company: (tagCompanyEl?.value || "").trim(),
-      topics: (tagTopicsEl?.value || "")
-        .split(",")
-        .map(s => s.trim())
-        .filter(Boolean)
-    };
+  const tags = {
+    year: (tagYearEl?.value || "").trim(),
+    company: (tagCompanyEl?.value || "").trim(),
+    topics: (tagTopicsEl?.value || "")
+      .split(",")
+      .map(s => s.trim())
+      .filter(Boolean)
+  };
 
-    try{
-      const { upload } = await import("https://esm.sh/@vercel/blob@2.0.0/client");
-
-      for (const file of files){
-        if (!String(file.name).toLowerCase().endsWith(".pdf")) {
-          throw new Error("ONLY PDFS ALLOWED: " + file.name);
-        }
-
-        const blob = await upload(file.name, file, {
-          access: "public",
-          handleUploadUrl: API_BASE + "/api/blob-upload-url",
-          headers: DEMO_TOKEN ? { Authorization: "Bearer " + DEMO_TOKEN } : undefined
-        });
-
-        const ingestResp = await fetch(API_BASE + "/api/ingest", {
-          method: "POST",
-          headers: headersJson(),
-          body: JSON.stringify({
-            sector: currentSector,
-            blobUrl: blob.url,
-            pathname: blob.pathname,
-            filename: file.name,
-            size: file.size,
-            tags
-          })
-        });
-
-        const ingestData = await ingestResp.json().catch(()=>({}));
-        if (!ingestResp.ok){
-          throw new Error((ingestData.error || "INGEST FAILED") + (ingestData.details ? " — " + ingestData.details : ""));
-        }
-        if (ingestData.duplicate){
-          addMsg("ai", `DUPLICATE SKIPPED: ${file.name}`);
-        } else {
-          addMsg("ai", `ADDED: ${file.name} ✅`);
-        }
+  try {
+    for (const file of files) {
+      if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+        addSys(`SKIPPED ${file.name}: ONLY PDFS ARE ALLOWED`, true);
+        continue;
       }
 
-      setStatus("UPLOAD COMPLETE");
-      fileEl.value = "";
-      await refreshLibrary();
-    } catch(e){
-      addSys("UPLOAD ERROR: " + (e.message || e), true);
-    } finally {
-      uploadBtn.disabled = false;
-      askBtn.disabled = false;
+      setStatus(`CREATING UPLOAD URL: ${file.name}`);
+
+      const tokenRes = await fetch(`${API_BASE}/api/blob-upload-url`, {
+        method: "POST",
+        headers: headersJson(),
+        body: JSON.stringify({
+          filename: file.name,
+          pathname: file.name,
+          contentType: file.type || "application/pdf"
+        })
+      });
+
+      const uploadInfo = await tokenRes.json();
+
+await fetch(uploadInfo.uploadUrl, {
+  method: "PUT",
+  headers: {
+    "Content-Type": file.type || "application/pdf",
+  },
+  body: file,
+});
+
+await fetch(`${API_BASE}/api/ingest`, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "x-demo-token": DEMO_TOKEN,
+  },
+  body: JSON.stringify({
+    blobUrl: uploadInfo.url,
+    filename: file.name,
+    title: title,
+    sector: sector,
+  }),
+});
+
+      if (!tokenRes.ok) {
+        throw new Error(
+          (uploadInfo.error || "UPLOAD URL FAILED") +
+          (uploadInfo.details ? " — " + uploadInfo.details : "")
+        );
+      }
+
+      setStatus(`UPLOADING PDF: ${file.name}`);
+
+      const putRes = await fetch(uploadInfo.uploadUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": file.type || "application/pdf"
+        },
+        body: file
+      });
+
+      
+
+      if (!putRes.ok) {
+        const errText = await putRes.text().catch(() => "");
+        throw new Error(`R2 UPLOAD FAILED: ${putRes.status} ${errText}`);
+      }
+
+      setStatus(`INGESTING PDF: ${file.name}`);
+
+      const ingestRes = await fetch(`${API_BASE}/api/ingest`, {
+        method: "POST",
+        headers: headersJson(),
+        body: JSON.stringify({
+          sector: currentSector,
+          blobUrl: uploadInfo.url,
+          pathname: uploadInfo.pathname,
+          filename: file.name,
+          tags
+        })
+      });
+
+      const ingestData = await ingestRes.json().catch(() => ({}));
+
+      if (!ingestRes.ok) {
+        throw new Error(
+          (ingestData.error || "INGEST FAILED") +
+          (ingestData.details ? " — " + ingestData.details : "")
+        );
+      }
+
+      addSys(`UPLOADED AND INGESTED: ${file.name} ✅`);
     }
+
+    fileEl.value = "";
+    await refreshLibrary();
+    setStatus("UPLOAD COMPLETE");
+  } catch(e) {
+    addSys("UPLOAD ERROR: " + (e.message || e), true);
+  } finally {
+    uploadBtn.disabled = false;
+    askBtn.disabled = false;
   }
+}
 
   async function ask(question){
     const q = (question || "").trim();
@@ -1194,10 +1249,6 @@ libToggleBtn.textContent = "SHOW";
 
   // init heptagons once
   drawHeptagons();
-
-  // wire buttons (ensure these exist already in your IIFE)
-  mapGenBtn.addEventListener("click", generateFutureMap);
-  mapPngBtn.addEventListener("click", downloadFutureMapPng);
 
   downloadChatPngBtn.addEventListener("click", downloadChatPng);
 
