@@ -47,7 +47,7 @@ export default async function handler(req, res) {
           return res.status(400).json({ error: 'Only PDF files are allowed' });
         }
 
-        const key = `uploads/${crypto.randomUUID()}-${filename}`;
+        const key = `uploads/${crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex')}-${filename}`;
 
         // Upload directly to R2 (server-side)
         await putObject(key, fileBuffer, 'application/pdf');

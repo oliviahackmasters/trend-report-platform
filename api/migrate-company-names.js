@@ -3,7 +3,7 @@
  * Run via: curl -X POST https://trend-report-platform.vercel.app/api/migrate-company-names
  * Or access via browser: https://trend-report-platform.vercel.app/api/migrate-company-names
  */
-import { list, put } from "@vercel/blob";
+import { listObjects, putJson, getJson } from "../lib/r2.js";
 import { setCors, handleOptions, requireDemoToken } from "../lib/cors.js";
 
 function json(res, status, payload) {
@@ -122,20 +122,18 @@ export default async function handler(req, res) {
 
   try {
     // List all metadata files
-    const metas = await list({ prefix: "trend-library/meta/" });
-    const metaFiles = metas.blobs || [];
+    const metaFiles = await listObjects("trend-library/meta/");
 
     let updated = 0;
     let unchanged = 0;
     const changes = [];
     const errors = [];
 
-    for (const blob of metaFiles) {
-      if (!blob.pathname.endsWith(".json")) continue;
+    for (const file of metaFiles) {
+      if (!file.key.endsWith(".json")) continue;
 
       try {
-        const resp = await fetch(blob.url);
-        const meta = await resp.json();
+        const meta = await getJson(file.key);
 
         const oldCompany = meta.tags?.company || "";
         const newCompany = normalizeCompanyName(oldCompany);
@@ -144,14 +142,10 @@ export default async function handler(req, res) {
           meta.tags = meta.tags || {};
           meta.tags.company = newCompany;
 
-          await put(blob.pathname, JSON.stringify(meta, null, 2), {
-            access: "public",
-            contentType: "application/json",
-            addRandomSuffix: false
-          });
+          await putJson(file.key, meta);
 
           changes.push({
-            file: blob.pathname,
+            file: file.key,
             old: oldCompany,
             new: newCompany,
             sector: meta.sector || "unknown"
