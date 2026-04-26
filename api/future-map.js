@@ -2,6 +2,26 @@ import { openai } from "../lib/openaiClient.js";
 import { setCors, handleOptions, requireDemoToken } from "../lib/cors.js";
 import { getVectorStoreIdForSector } from "../lib/vs.js";
 
+const allowedOrigins = [
+  'https://www.hackmasters.co.uk',
+  'https://hackmasters.co.uk'
+];
+
+function corsHeaders(req) {
+  const origin = req.headers.origin;
+  const allowedOrigin = allowedOrigins.includes(origin)
+    ? origin
+    : allowedOrigins[0];
+
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Max-Age': '86400'
+  };
+}
+
+
 function json(res, status, payload) {
   res.statusCode = status;
   res.setHeader("Content-Type", "application/json");

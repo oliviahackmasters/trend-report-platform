@@ -7,6 +7,26 @@ function json(res, status, payload) {
   res.end(JSON.stringify(payload));
 }
 
+const allowedOrigins = [
+  'https://www.hackmasters.co.uk',
+  'https://hackmasters.co.uk'
+];
+
+function corsHeaders(req) {
+  const origin = req.headers.origin;
+  const allowedOrigin = allowedOrigins.includes(origin)
+    ? origin
+    : allowedOrigins[0];
+
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Max-Age': '86400'
+  };
+}
+
+
 export default async function handler(req, res) {
 setCors(req, res);
 if (handleOptions(req, res)) return;
