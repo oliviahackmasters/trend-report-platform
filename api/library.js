@@ -19,6 +19,7 @@ if (!requireDemoToken(req, res)) return;
     const base = req.headers.host ? `http://${req.headers.host}` : "http://localhost";
     const url = new URL(req.url, base);
     const sector = String(url.searchParams.get("sector") || "luxury").trim().toLowerCase();
+    console.log(`LIBRARY FETCH sector=${sector}`);
 
     const metas = await listObjects("trend-library/meta/");
     const items = [];

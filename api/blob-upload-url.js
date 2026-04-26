@@ -14,15 +14,7 @@ export default async function handler(req, res) {
   if (!requireDemoToken(req, res)) return;
 
   if (req.method !== 'POST') {
-    const publicUrl = publicUrlForKey(key);
-
-return res.status(200).json({
-  uploadUrl,
-  publicUrl,
-  blobUrl: publicUrl,
-  key,
-  pathname: key
-});
+    return res.status(405).json({ error: "Use POST" });
   }
 
   try {
@@ -47,11 +39,14 @@ return res.status(200).json({
 
     console.log("Generating upload URL for key:", key);
     const uploadUrl = await createUploadUrl({ key, contentType });
+    const publicUrl = publicUrlForKey(key);
 
     return res.status(200).json({
       uploadUrl,
-      publicUrl: publicUrlForKey(key),
-      key
+      publicUrl,
+      blobUrl: publicUrl,
+      key,
+      pathname: key
     });
   } catch (e) {
     console.error("Upload URL generation failed:", e);

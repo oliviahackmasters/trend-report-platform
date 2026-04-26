@@ -277,6 +277,8 @@ export default async function handler(req, res) {
   const vsid = getVectorStoreIdForSector(sector);
   if (!vsid) return json(res, 500, { error: `Missing vector store ID for sector: ${sector}` });
 
+  console.log(`INGEST START sector=${sector} filename=${filename} size=${size} blobUrl=${blobUrl}`);
+
   try {
     // Download blob
     const resp = await fetch(blobUrl);
@@ -294,7 +296,8 @@ export default async function handler(req, res) {
 
     for (const key of checkKeys) {
       const existing = await listObjects(key);
-if (existing.length) {
+      if (existing.length) {
+        console.log(`INGEST DUPLICATE sector=${sector} key=${key} hash=${hash}`);
         return json(res, 200, { ok: true, duplicate: true, hash });
       }
     }
@@ -362,9 +365,11 @@ if (existing.length) {
     };
 
     await putJson(metaKey, meta);
+    console.log(`INGEST COMPLETE sector=${sector} metaKey=${metaKey} vsFileId=${vsFile?.id}`);
 
     return json(res, 200, { ok: true, hash, duplicate: false, tags: finalTags });
   } catch (e) {
+    console.error("INGEST FAILED", e);
     return json(res, 500, { error: "INGEST FAILED", details: String(e?.message || e) });
   }
 }
