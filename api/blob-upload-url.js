@@ -53,8 +53,3 @@ export default async function handler(req, res) {
     });
   }
 }
-      error: "Failed to generate upload URL",
-      details: String(e?.message || e)
-    });
-  }
-}
