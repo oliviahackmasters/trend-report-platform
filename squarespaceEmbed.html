@@ -835,8 +835,8 @@ async function uploadFiles(){
         headers: headersJson(),
         body: JSON.stringify({
           sector: currentSector,
-          blobUrl: uploadInfo.url,
-          pathname: uploadInfo.pathname,
+          blobUrl: uploadInfo.publicUrl,
+          pathname: uploadInfo.key,
           filename: file.name,
           tags
         })
