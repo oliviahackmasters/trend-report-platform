@@ -29,6 +29,7 @@ export default async function handler(req, res) {
           // IMPORTANT:
           // Use "public" so your server can fetch the blob by URL to ingest into OpenAI.
           // Your Squarespace password protection is your access control.
+          access: "public",
           tokenPayload: JSON.stringify({ purpose: "trend-report" })
         };
       },

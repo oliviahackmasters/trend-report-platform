@@ -19,7 +19,8 @@ export default async function handler(req, res){
     const url = new URL(req.url, base);
     const sector = String(url.searchParams.get("sector") || "luxury").trim().toLowerCase();
 
-    const metas = await list({ prefix: "trend-library/meta/" });
+    const allBlobs = await list();
+    const metas = allBlobs.blobs.filter(b => b.pathname.startsWith("trend-library/meta/"));
     const items = [];
 
     for (const b of metas.blobs || []) {

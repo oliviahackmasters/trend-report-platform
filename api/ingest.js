@@ -292,8 +292,10 @@ export default async function handler(req, res) {
     const checkKeys = sector === "luxury" ? [legacyMetaKey, sectorMetaKey] : [sectorMetaKey];
 
     for (const key of checkKeys) {
-      const existing = await list({ prefix: key });
-      if ((existing.blobs || []).length) {
+      const allBlobs = await list();
+      const existing = allBlobs.blobs.filter(b => b.pathname === key);
+      if (existing.length) {
+        console.log(`INGEST DUPLICATE sector=${sector} key=${key} hash=${hash}`);
         return json(res, 200, { ok: true, duplicate: true, hash });
       }
     }
