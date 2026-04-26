@@ -784,43 +784,80 @@ libToggleBtn.textContent = "SHOW";
     };
 
 
-    
+
     try{
       const { upload } = await import("https://esm.sh/@vercel/blob@2.0.0/client");
 
-      for (const file of files){
-        if (!String(file.name).toLowerCase().endsWith(".pdf")) {
-          throw new Error("ONLY PDFS ALLOWED: " + file.name);
+      for (const file of files) {
+        if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+          addSys(`SKIPPED ${file.name}: ONLY PDFS ARE ALLOWED`, true);
+          continue;
         }
 
-        const blob = await upload(file.name, file, {
-          access: "public",
-          handleUploadUrl: API_BASE + "/api/blob-upload-url",
-          headers: DEMO_TOKEN ? { Authorization: "Bearer " + DEMO_TOKEN } : undefined
+        setStatus(`UPLOADING PDF: ${file.name}`);
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const uploadRes = await fetch(`${API_BASE}/api/upload`, {
+          method: "POST",
+          headers: headersJson(),
+          body: formData
         });
 
-        const ingestResp = await fetch(API_BASE + "/api/ingest", {
+        const uploadText = await uploadRes.text();
+        let uploadInfo;
+        try {
+          uploadInfo = JSON.parse(uploadText);
+        } catch {
+          throw new Error(`UPLOAD RETURNED NON-JSON: ${uploadText.slice(0, 300)}`);
+        }
+
+        if (!uploadRes.ok) {
+          throw new Error(
+            (uploadInfo.error || "UPLOAD FAILED") +
+            (uploadInfo.details ? " — " + uploadInfo.details : "")
+          );
+        }
+
+        const blobUrl = uploadInfo.blobUrl || uploadInfo.url;
+
+        if (!blobUrl) {
+          throw new Error("Missing blobUrl from server: " + JSON.stringify(uploadInfo));
+        }
+
+        setStatus(`INGESTING PDF: ${file.name}`);
+
+        const ingestRes = await fetch(`${API_BASE}/api/ingest`, {
           method: "POST",
           headers: headersJson(),
           body: JSON.stringify({
             sector: currentSector,
-            blobUrl: blob.url,
-            pathname: blob.pathname,
+            blobUrl,
+            pathname: uploadInfo.key || file.name,
             filename: file.name,
             size: file.size,
             tags
           })
         });
 
-        const ingestData = await ingestResp.json().catch(()=>({}));
-        if (!ingestResp.ok){
-          throw new Error((ingestData.error || "INGEST FAILED") + (ingestData.details ? " — " + ingestData.details : ""));
+        const ingestText = await ingestRes.text();
+
+        let ingestData;
+        try {
+          ingestData = JSON.parse(ingestText);
+        } catch {
+          throw new Error(`INGEST RETURNED NON-JSON: ${ingestText.slice(0, 300)}`);
         }
-        if (ingestData.duplicate){
-          addMsg("ai", `DUPLICATE SKIPPED: ${file.name}`);
-        } else {
-          addMsg("ai", `ADDED: ${file.name} ✅`);
+
+        if (!ingestRes.ok) {
+          throw new Error(
+            (ingestData.error || "INGEST FAILED") +
+            (ingestData.details ? " — " + ingestData.details : "")
+          );
         }
+
+        addSys(`UPLOADED AND INGESTED: ${file.name} ✅`);
       }
 
       setStatus("UPLOAD COMPLETE");
