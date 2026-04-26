@@ -9,8 +9,8 @@ function json(res, status, payload) {
 
 export default async function handler(req, res) {
   setCors(req, res);
-  if (handleOptions(req, res)) return;
-  if (!requireDemoToken(req, res)) return;
+if (handleOptions(req, res)) return;
+if (!requireDemoToken(req, res)) return;
 
   if (req.method !== "GET") return json(res, 405, { error: "Use GET." });
 

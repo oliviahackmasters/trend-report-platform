@@ -8,7 +8,9 @@ function json(res, status, payload) {
 }
 
 export default async function handler(req, res) {
-  setCors(req, res);
+setCors(req, res);
+if (handleOptions(req, res)) return;
+if (!requireDemoToken(req, res)) return;
 
   try {
     if (handleOptions(req, res)) return;

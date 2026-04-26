@@ -13,8 +13,8 @@ export const config = { maxDuration: 60 };
 
 export default async function handler(req, res) {
   setCors(req, res);
-  if (handleOptions(req, res)) return;
-  if (!requireDemoToken(req, res)) return;
+if (handleOptions(req, res)) return;
+if (!requireDemoToken(req, res)) return;
 
   try {
     if (req.method !== "POST") {
