@@ -801,7 +801,11 @@ libToggleBtn.textContent = "SHOW";
 
         const uploadRes = await fetch(`${API_BASE}/api/upload`, {
           method: "POST",
-          headers: headersJson(),
+          headers: (() => {
+            const h = headersJson();
+            delete h["Content-Type"]; // Let browser set multipart/form-data
+            return h;
+          })(),
           body: formData
         });
 

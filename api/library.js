@@ -1,4 +1,4 @@
-import { list } from "@vercel/blob";
+import { listObjects, getJson } from "../lib/r2.js";
 import { setCors, handleOptions, requireDemoToken } from "../lib/cors.js";
 
 function json(res, status, payload){
@@ -19,13 +19,11 @@ export default async function handler(req, res){
     const url = new URL(req.url, base);
     const sector = String(url.searchParams.get("sector") || "luxury").trim().toLowerCase();
 
-    const allBlobs = await list();
-    const metas = allBlobs.blobs.filter(b => b.pathname.startsWith("trend-library/meta/"));
+    const metas = await listObjects("trend-library/meta/");
     const items = [];
 
-    for (const b of metas.blobs || []) {
-      const r = await fetch(b.url);
-      const meta = await r.json().catch(()=>null);
+    for (const b of metas) {
+      const meta = await getJson(b.key).catch(() => null);
       if (!meta) continue;
 
       const itemSector = String(meta.sector || "").trim().toLowerCase();

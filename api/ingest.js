@@ -2,7 +2,7 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import crypto from "crypto";
-import { put, list } from "@vercel/blob";
+import { putJson, listObjects } from "../lib/r2.js";
 
 import { openai } from "../lib/openaiClient.js";
 import { getVectorStores, getVectorStoreIdForSector } from "../lib/vs.js";
@@ -292,8 +292,7 @@ export default async function handler(req, res) {
     const checkKeys = sector === "luxury" ? [legacyMetaKey, sectorMetaKey] : [sectorMetaKey];
 
     for (const key of checkKeys) {
-      const allBlobs = await list();
-      const existing = allBlobs.blobs.filter(b => b.pathname === key);
+      const existing = await listObjects(key);
       if (existing.length) {
         console.log(`INGEST DUPLICATE sector=${sector} key=${key} hash=${hash}`);
         return json(res, 200, { ok: true, duplicate: true, hash });
@@ -362,11 +361,7 @@ export default async function handler(req, res) {
       vsFileId: vsFile?.id || null
     };
 
-    await put(metaKey, JSON.stringify(meta, null, 2), {
-      access: "public",
-      contentType: "application/json",
-      addRandomSuffix: false
-    });
+    await putJson(metaKey, meta);
 
     return json(res, 200, { ok: true, hash, duplicate: false, tags: finalTags });
   } catch (e) {
