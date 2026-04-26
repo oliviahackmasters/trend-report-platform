@@ -765,8 +765,7 @@ libToggleBtn.textContent = "SHOW";
   }
 
 
-  
-async function uploadFiles(){
+  async function uploadFiles(){
   const files = Array.from(fileEl.files || []);
   if (!files.length) return addSys("CHOOSE PDFS FIRST", true);
 
@@ -804,7 +803,14 @@ async function uploadFiles(){
         })
       });
 
-      const uploadInfo = await tokenRes.json();
+      const tokenText = await tokenRes.text();
+
+      let uploadInfo;
+      try {
+        uploadInfo = JSON.parse(tokenText);
+      } catch {
+        throw new Error(`UPLOAD URL RETURNED NON-JSON: ${tokenText.slice(0, 300)}`);
+      }
 
       if (!tokenRes.ok) {
         throw new Error(
@@ -813,9 +819,21 @@ async function uploadFiles(){
         );
       }
 
+      const uploadUrl = uploadInfo.uploadUrl;
+      const blobUrl = uploadInfo.blobUrl || uploadInfo.publicUrl;
+      const pathname = uploadInfo.pathname || uploadInfo.key;
+
+      if (!uploadUrl) {
+        throw new Error("Missing uploadUrl from server: " + JSON.stringify(uploadInfo));
+      }
+
+      if (!blobUrl) {
+        throw new Error("Missing blobUrl from server: " + JSON.stringify(uploadInfo));
+      }
+
       setStatus(`UPLOADING PDF: ${file.name}`);
 
-      const putRes = await fetch(uploadInfo.uploadUrl, {
+      const putRes = await fetch(uploadUrl, {
         method: "PUT",
         headers: {
           "Content-Type": file.type || "application/pdf"
@@ -835,14 +853,22 @@ async function uploadFiles(){
         headers: headersJson(),
         body: JSON.stringify({
           sector: currentSector,
-          blobUrl: uploadInfo.publicUrl,
-          pathname: uploadInfo.key,
+          blobUrl,
+          pathname,
           filename: file.name,
+          size: file.size,
           tags
         })
       });
 
-      const ingestData = await ingestRes.json().catch(() => ({}));
+      const ingestText = await ingestRes.text();
+
+      let ingestData;
+      try {
+        ingestData = JSON.parse(ingestText);
+      } catch {
+        throw new Error(`INGEST RETURNED NON-JSON: ${ingestText.slice(0, 300)}`);
+      }
 
       if (!ingestRes.ok) {
         throw new Error(

@@ -14,7 +14,15 @@ export default async function handler(req, res) {
   if (!requireDemoToken(req, res)) return;
 
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    const publicUrl = publicUrlForKey(key);
+
+return res.status(200).json({
+  uploadUrl,
+  publicUrl,
+  blobUrl: publicUrl,
+  key,
+  pathname: key
+});
   }
 
   try {
